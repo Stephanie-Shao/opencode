@@ -2,7 +2,7 @@ import { createEffect, createMemo, For, Match, on, onCleanup, Show, Switch } fro
 import { createStore, produce } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { useParams } from "@solidjs/router"
-import { useCodeComponent } from "@opencode-ai/ui/context/code"
+import { useFileRenderer, type CommentSurface } from "@opencode-ai/ui/context/file-renderer"
 import { sampledChecksum } from "@opencode-ai/util/encode"
 import { decode64 } from "@/utils/base64"
 import { showToast } from "@opencode-ai/ui/toast"
@@ -30,7 +30,7 @@ export function FileTabContent(props: { tab: string }) {
   const comments = useComments()
   const language = useLanguage()
   const prompt = usePrompt()
-  const codeComponent = useCodeComponent()
+  const renderer = useFileRenderer()
 
   const sessionKey = createMemo(() => `${params.dir}${params.id ? "/" + params.id : ""}`)
   const tabs = createMemo(() => layout.tabs(sessionKey))
@@ -145,6 +145,7 @@ export function FileTabContent(props: { tab: string }) {
   }
 
   let wrap: HTMLDivElement | undefined
+  let surface: CommentSurface | undefined
 
   const fileComments = createMemo(() => {
     const p = path()
@@ -181,11 +182,34 @@ export function FileTabContent(props: { tab: string }) {
     return root
   }
 
-  const findMarker = (root: ShadowRoot, range: SelectedLineRange) => {
+  const findShadowMarker = (root: ShadowRoot, range: SelectedLineRange) => {
     const line = Math.max(range.start, range.end)
     const node = root.querySelector(`[data-line="${line}"]`)
     if (!(node instanceof HTMLElement)) return
     return node
+  }
+
+  const findDomMarker = (wrapper: HTMLElement, range: SelectedLineRange) => {
+    const line = Math.max(range.start, range.end)
+    const exact = wrapper.querySelector(`[data-line-anchor="${line}"]`)
+    if (exact instanceof HTMLElement) return exact
+
+    const anchors = Array.from(wrapper.querySelectorAll("[data-line-anchor]"))
+      .map((el) => {
+        if (!(el instanceof HTMLElement)) return
+        const value = parseInt(el.dataset.lineAnchor ?? "", 10)
+        if (Number.isNaN(value)) return
+        return { line: value, el }
+      })
+      .filter((x): x is { line: number; el: HTMLElement } => !!x)
+      .sort((a, b) => a.line - b.line)
+
+    let hit: HTMLElement | undefined
+    for (const item of anchors) {
+      if (item.line > line) break
+      hit = item.el
+    }
+    return hit
   }
 
   const markerTop = (wrapper: HTMLElement, marker: HTMLElement) => {
@@ -197,7 +221,7 @@ export function FileTabContent(props: { tab: string }) {
   const updateComments = () => {
     const el = wrap
     const root = getRoot()
-    if (!el || !root) {
+    if (!el) {
       setNote("positions", {})
       setNote("draftTop", undefined)
       return
@@ -214,7 +238,10 @@ export function FileTabContent(props: { tab: string }) {
 
     const next: Record<string, number> = {}
     for (const comment of fileComments()) {
-      const marker = findMarker(root, comment.selection)
+      const marker =
+        surface?.anchor(comment.selection) ??
+        (root ? findShadowMarker(root, comment.selection) : undefined) ??
+        findDomMarker(el, comment.selection)
       if (marker) next[comment.id] = markerTop(el, marker)
       else if (large) next[comment.id] = estimateTop(comment.selection)
     }
@@ -242,7 +269,8 @@ export function FileTabContent(props: { tab: string }) {
       return
     }
 
-    const marker = findMarker(root, range)
+    const marker =
+      surface?.anchor(range) ?? (root ? findShadowMarker(root, range) : undefined) ?? findDomMarker(el, range)
     if (marker) {
       setNote("draftTop", markerTop(el, marker))
       return
@@ -416,12 +444,22 @@ export function FileTabContent(props: { tab: string }) {
     <div
       ref={(el) => {
         wrap = el
+        surface = undefined
         scheduleComments()
       }}
       class={`relative overflow-hidden ${wrapperClass}`}
     >
       <Dynamic
-        component={codeComponent}
+        component={
+          renderer.resolve({
+            path: path() ?? "",
+            mimeType: state()?.content?.mimeType,
+          }).component
+        }
+        meta={{
+          path: path() ?? "",
+          mimeType: state()?.content?.mimeType,
+        }}
         file={{
           name: path() ?? "",
           contents: source,
@@ -430,6 +468,10 @@ export function FileTabContent(props: { tab: string }) {
         enableLineSelection
         selectedLines={selectedLines()}
         commentedLines={commentedLines()}
+        surfaceRef={(next) => {
+          surface = next ?? undefined
+          requestAnimationFrame(scheduleComments)
+        }}
         onRendered={() => {
           requestAnimationFrame(restoreScroll)
           requestAnimationFrame(scheduleComments)
