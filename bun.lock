@@ -27,6 +27,7 @@
       "version": "1.2.6",
       "dependencies": {
         "@kobalte/core": "catalog:",
+        "@opencode-ai/markdown-file-renderer": "workspace:*",
         "@opencode-ai/sdk": "workspace:*",
         "@opencode-ai/ui": "workspace:*",
         "@opencode-ai/util": "workspace:*",
@@ -257,6 +258,19 @@
         "@tsconfig/node22": "22.0.2",
         "@types/node": "catalog:",
         "typescript": "catalog:",
+      },
+    },
+    "packages/markdown-file-renderer": {
+      "name": "@opencode-ai/markdown-file-renderer",
+      "version": "0.0.0",
+      "dependencies": {
+        "@opencode-ai/ui": "workspace:*",
+        "dompurify": "catalog:",
+        "rehype-stringify": "^10.0.1",
+        "remark-gfm": "^4.0.1",
+        "remark-parse": "^11.0.0",
+        "remark-rehype": "^11.1.2",
+        "unified": "^11.0.5",
       },
     },
     "packages/opencode": {
@@ -1281,6 +1295,8 @@
     "@opencode-ai/enterprise": ["@opencode-ai/enterprise@workspace:packages/enterprise"],
 
     "@opencode-ai/function": ["@opencode-ai/function@workspace:packages/function"],
+
+    "@opencode-ai/markdown-file-renderer": ["@opencode-ai/markdown-file-renderer@workspace:packages/markdown-file-renderer"],
 
     "@opencode-ai/plugin": ["@opencode-ai/plugin@workspace:packages/plugin"],
 

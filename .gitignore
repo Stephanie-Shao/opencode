@@ -25,5 +25,6 @@ target
 
 # Local dev files
 opencode-dev
+.opencode-dev/
 logs/
 *.bun-build
