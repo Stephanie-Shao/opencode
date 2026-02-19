@@ -6,6 +6,7 @@ import { Hono } from "hono"
 import { cors } from "hono/cors"
 import { streamSSE } from "hono/streaming"
 import { proxy } from "hono/proxy"
+import path from "path"
 import { basicAuth } from "hono/basic-auth"
 import z from "zod"
 import { Provider } from "../provider/provider"
@@ -49,6 +50,10 @@ export namespace Server {
 
   let _url: URL | undefined
   let _corsWhitelist: string[] = []
+  let _uiDir: string | undefined
+
+  const csp =
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; media-src 'self' data:; connect-src 'self' data:"
 
   export function url(): URL {
     return _url ?? new URL("http://localhost:4096")
@@ -541,19 +546,49 @@ export namespace Server {
           },
         )
         .all("/*", async (c) => {
-          const path = c.req.path
+          if (_uiDir) {
+            const method = c.req.method.toUpperCase()
+            if (method !== "GET" && method !== "HEAD") {
+              return c.text("Method Not Allowed", 405)
+            }
 
-          const response = await proxy(`https://app.opencode.ai${path}`, {
+            const base = path.resolve(_uiDir)
+            const reqPath = c.req.path === "/" ? "/index.html" : c.req.path
+            const filepath = path.resolve(base, "." + reqPath)
+            if (!filepath.startsWith(base)) return c.text("Forbidden", 403)
+
+            const file = Bun.file(filepath)
+            if (await file.exists()) {
+              const headers = new Headers({
+                "Content-Security-Policy": csp,
+                "Content-Type": file.type || "application/octet-stream",
+              })
+              return new Response(method === "HEAD" ? null : file.stream(), { status: 200, headers })
+            }
+
+            // SPA fallback: for routes without a file extension, serve index.html.
+            if (!c.req.path.includes(".")) {
+              const index = Bun.file(path.join(base, "index.html"))
+              if (await index.exists()) {
+                const headers = new Headers({
+                  "Content-Security-Policy": csp,
+                  "Content-Type": index.type || "text/html",
+                })
+                return new Response(method === "HEAD" ? null : index.stream(), { status: 200, headers })
+              }
+            }
+          }
+
+          const reqPath = c.req.path
+
+          const response = await proxy(`https://app.opencode.ai${reqPath}`, {
             ...c.req,
             headers: {
               ...c.req.raw.headers,
               host: "app.opencode.ai",
             },
           })
-          response.headers.set(
-            "Content-Security-Policy",
-            "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; media-src 'self' data:; connect-src 'self' data:",
-          )
+          response.headers.set("Content-Security-Policy", csp)
           return response
         }) as unknown as Hono,
   )
@@ -579,8 +614,10 @@ export namespace Server {
     mdns?: boolean
     mdnsDomain?: string
     cors?: string[]
+    uiDir?: string
   }) {
     _corsWhitelist = opts.cors ?? []
+    _uiDir = opts.uiDir
 
     const args = {
       hostname: opts.hostname,

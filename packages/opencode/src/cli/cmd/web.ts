@@ -30,14 +30,19 @@ function getNetworkIPs() {
 
 export const WebCommand = cmd({
   command: "web",
-  builder: (yargs) => withNetworkOptions(yargs),
+  builder: (yargs) =>
+    withNetworkOptions(yargs).option("ui-dir", {
+      type: "string",
+      describe: "serve web UI assets from local directory (fully local web UI)",
+    }),
   describe: "start opencode server and open web interface",
   handler: async (args) => {
     if (!Flag.OPENCODE_SERVER_PASSWORD) {
       UI.println(UI.Style.TEXT_WARNING_BOLD + "!  " + "OPENCODE_SERVER_PASSWORD is not set; server is unsecured.")
     }
     const opts = await resolveNetworkOptions(args)
-    const server = Server.listen(opts)
+    const uiDir = (args as unknown as { "ui-dir"?: string })["ui-dir"]
+    const server = Server.listen({ ...opts, uiDir })
     UI.empty()
     UI.println(UI.logo("  "))
     UI.empty()
