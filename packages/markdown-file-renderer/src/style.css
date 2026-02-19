@@ -1,0 +1,20 @@
+[data-component="markdown"][data-markdown-view="file"] h1 {
+  font-size: var(--font-size-x-large);
+  line-height: var(--line-height-large);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+[data-component="markdown"][data-markdown-view="file"] h2 {
+  font-size: var(--font-size-large);
+  line-height: var(--line-height-large);
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+[data-component="markdown"][data-markdown-view="file"] h3 {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-large);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}

@@ -3,8 +3,20 @@ set -euo pipefail
 
 server_port="${OPENCODE_DEV_SERVER_PORT:-5096}"
 ui_port="${OPENCODE_DEV_UI_PORT:-5444}"
-server_host="${OPENCODE_DEV_SERVER_HOST:-127.0.0.1}"
-ui_host="${OPENCODE_DEV_UI_HOST:-127.0.0.1}"
+
+# Bind hosts: where processes listen on *this machine*.
+server_bind_host="${OPENCODE_DEV_SERVER_BIND_HOST:-127.0.0.1}"
+ui_bind_host="${OPENCODE_DEV_UI_BIND_HOST:-0.0.0.0}"
+
+# Public host: the hostname your browser uses to access the UI.
+#
+# Examples:
+# - If you use SSH port forwarding, this is often "localhost".
+# - If you access the remote machine directly, this is its IP or domain.
+public_host="${OPENCODE_DEV_PUBLIC_HOST:-localhost}"
+
+# Where the UI should reach the backend from the browser.
+server_public_host="${OPENCODE_DEV_SERVER_PUBLIC_HOST:-$public_host}"
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -79,8 +91,10 @@ mkdir -p \
 shim_mdast_to_markdown
 
 echo "Starting isolated opencode dev servers"
-echo "- Backend: http://${server_host}:${server_port} (XDG_DATA_HOME=$XDG_DATA_HOME)"
-echo "- UI:      http://${ui_host}:${ui_port}"
+echo "- Backend bind: http://${server_bind_host}:${server_port} (XDG_DATA_HOME=$XDG_DATA_HOME)"
+echo "- UI bind:      http://${ui_bind_host}:${ui_port}"
+echo "- UI public:    http://${public_host}:${ui_port}"
+echo "- API public:   http://${server_public_host}:${server_port}"
 echo
 
 server_pid=""
@@ -95,16 +109,16 @@ trap cleanup EXIT
 
 (
   cd "$root_dir/packages/opencode"
-  exec bun run --conditions=browser ./src/index.ts serve \
-    --hostname "$server_host" \
+  exec bun run --conditions=browser "./src/index.ts" serve \
+    --hostname "$server_bind_host" \
     --port "$server_port" \
-    --cors "http://${ui_host}:${ui_port}"
+    --cors "http://${public_host}:${ui_port}" ${OPENCODE_DEV_SERVER_ARGS:-}
 ) &
 server_pid="$!"
 
 (
   cd "$root_dir/packages/app"
-  export VITE_OPENCODE_SERVER_HOST="$server_host"
+  export VITE_OPENCODE_SERVER_HOST="$server_public_host"
   export VITE_OPENCODE_SERVER_PORT="$server_port"
-  exec bun dev -- --host "$ui_host" --port "$ui_port"
+  exec bun dev -- --host "$ui_bind_host" --port "$ui_port"
 )

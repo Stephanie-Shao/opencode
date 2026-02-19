@@ -57,10 +57,32 @@ Defaults:
 - UI: `127.0.0.1:5444`
 - XDG dirs: `./.opencode-dev/*` (isolated local storage)
 
+When running on a remote machine, you likely need to set the "public" hostnames so that:
+
+- the backend allows the UI origin (CORS)
+- the UI points at the backend host your browser can reach
+
 Override ports:
 
 ```bash
 OPENCODE_DEV_SERVER_PORT=6096 OPENCODE_DEV_UI_PORT=6444 ./script/dev-web-isolated.sh
+```
+
+Remote server example (access UI at `http://<server-ip>:5444`):
+
+```bash
+OPENCODE_DEV_PUBLIC_HOST=<server-ip> \
+OPENCODE_DEV_SERVER_BIND_HOST=0.0.0.0 \
+./script/dev-web-isolated.sh
+```
+
+SSH tunnel example (access UI at `http://localhost:5444`):
+
+```bash
+# In your SSH client:
+# ssh -L 5444:127.0.0.1:5444 -L 5096:127.0.0.1:5096 <server>
+
+OPENCODE_DEV_PUBLIC_HOST=localhost ./script/dev-web-isolated.sh
 ```
 
 Override XDG root:

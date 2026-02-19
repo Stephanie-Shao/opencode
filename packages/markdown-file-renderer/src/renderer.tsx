@@ -5,12 +5,8 @@ import remarkGfm from "remark-gfm"
 import remarkRehype from "remark-rehype"
 import rehypeStringify from "rehype-stringify"
 import { createEffect, createMemo, createResource, createSignal, onCleanup } from "solid-js"
-import type {
-  CommentSurface,
-  FileRenderer,
-  FileRenderProps,
-  LineRange,
-} from "@opencode-ai/ui/context/file-renderer"
+import "./style.css"
+import type { CommentSurface, FileRenderer, FileRenderProps, LineRange } from "@opencode-ai/ui/context/file-renderer"
 
 type Pos = {
   start?: { line?: number; column?: number }
@@ -222,7 +218,7 @@ export function MarkdownFileView(props: FileRenderProps) {
   }
 
   const handleSelectionChange = () => {
-    if (down) return
+    if (!down) return
     const el = root()
     if (!el) return
     emitSelected(rangeForRoot(el))
@@ -268,6 +264,7 @@ export function MarkdownFileView(props: FileRenderProps) {
         props.surfaceRef?.(surface)
       }}
       data-component="markdown"
+      data-markdown-view="file"
       classList={{
         ...(props.classList ?? {}),
         [props.class ?? ""]: !!props.class,

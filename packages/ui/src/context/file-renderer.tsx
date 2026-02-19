@@ -1,4 +1,4 @@
-import type { ValidComponent } from "solid-js"
+import type { Component } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { createSimpleContext } from "./helper"
 import { useCodeComponent } from "./code"
@@ -43,7 +43,7 @@ export type FileRenderProps = {
 export type FileRenderer = {
   id: string
   match(meta: FileMeta): boolean
-  component: ValidComponent<FileRenderProps>
+  component: Component<FileRenderProps>
 }
 
 type Resolver = {
