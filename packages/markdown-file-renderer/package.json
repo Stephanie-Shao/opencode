@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@opencode-ai/ui": "workspace:*",
+    "solid-js": "catalog:",
     "dompurify": "catalog:",
     "rehype-stringify": "^10.0.1",
     "remark-gfm": "^4.0.1",

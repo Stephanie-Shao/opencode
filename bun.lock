@@ -270,6 +270,7 @@
         "remark-gfm": "^4.0.1",
         "remark-parse": "^11.0.0",
         "remark-rehype": "^11.1.2",
+        "solid-js": "catalog:",
         "unified": "^11.0.5",
       },
     },

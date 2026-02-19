@@ -26,7 +26,12 @@ const CHANNEL = await (async () => {
   if (env.OPENCODE_CHANNEL) return env.OPENCODE_CHANNEL
   if (env.OPENCODE_BUMP) return "latest"
   if (env.OPENCODE_VERSION && !env.OPENCODE_VERSION.startsWith("0.0.0-")) return "latest"
-  return await $`git branch --show-current`.text().then((x) => x.trim())
+  const git = Bun.which("git")
+  if (!git) return "dev"
+  return await $`git branch --show-current`
+    .text()
+    .then((x) => x.trim() || "dev")
+    .catch(() => "dev")
 })()
 const IS_PREVIEW = CHANNEL !== "latest"
 
