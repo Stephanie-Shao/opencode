@@ -1,0 +1,27 @@
+.git/
+
+# Host-installed dependencies (image installs its own)
+node_modules/
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/.turbo/
+**/coverage/
+
+# Local dev/state
+.opencode-dev/
+.worktrees/
+.zed/
+.vscode/
+analysis/
+
+# Logs
+**/*.log
+
+# Secrets / env
+.env
+.env.*
+
+# OS cruft
+**/.DS_Store

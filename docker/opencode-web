@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+exec opencode web \
+  --hostname 0.0.0.0 \
+  --port 4096 \
+  --ui-dir /opt/opencode/ui \
+  "$@"
