@@ -1,3 +1,4 @@
+/** @jsxImportSource solid-js */
 import DOMPurify from "dompurify"
 import { unified } from "unified"
 import remarkParse from "remark-parse"
@@ -7,6 +8,9 @@ import rehypeStringify from "rehype-stringify"
 import { createEffect, createMemo, createResource, createSignal, onCleanup } from "solid-js"
 import "./style.css"
 import type { CommentSurface, FileRenderer, FileRenderProps, LineRange } from "@opencode-ai/ui/context/file-renderer"
+import { IconButton } from "@opencode-ai/ui/icon-button"
+import { Tooltip } from "@opencode-ai/ui/tooltip"
+import { useI18n } from "@opencode-ai/ui/context/i18n"
 
 type Pos = {
   start?: { line?: number; column?: number }
@@ -134,7 +138,31 @@ function rangeForRoot(root: HTMLDivElement) {
 }
 
 export function MarkdownFileView(props: FileRenderProps) {
+  const i18n = useI18n()
   const source = createMemo(() => props.file.contents)
+  const [copied, setCopied] = createSignal(false)
+  let timer: ReturnType<typeof setTimeout> | undefined
+
+  const label = createMemo(() => (copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copy")))
+
+  const handleCopy = () => {
+    if (typeof navigator === "undefined") return
+    if (!navigator.clipboard?.writeText) return
+    console.log("[markdown-file-copy] click")
+    console.log("[markdown-file-copy] isSecureContext", (globalThis as { isSecureContext?: unknown }).isSecureContext)
+    console.log("[markdown-file-copy] hasFocus", document.hasFocus())
+    void navigator.clipboard
+      .writeText(source())
+      .then(() => {
+        console.log("[markdown-file-copy] copied")
+        setCopied(true)
+        if (timer) clearTimeout(timer)
+        timer = setTimeout(() => setCopied(false), 2000)
+      })
+      .catch((err) => {
+        console.error("[markdown-file-copy] copy failed", err)
+      })
+  }
 
   const [html] = createResource(
     () => props.file.cacheKey ?? source(),
@@ -201,6 +229,10 @@ export function MarkdownFileView(props: FileRenderProps) {
   }
 
   const handleMouseDown = (event: MouseEvent) => {
+    if (event.target instanceof Element && event.target.closest('[data-slot="markdown-file-copy"]')) {
+      down = false
+      return
+    }
     const el = root()
     if (!el) return
     if (!(event.target instanceof Node)) return
@@ -226,6 +258,10 @@ export function MarkdownFileView(props: FileRenderProps) {
 
   onCleanup(() => props.surfaceRef?.(null))
 
+  onCleanup(() => {
+    if (timer) clearTimeout(timer)
+  })
+
   createEffect(() => {
     const next = html()
     const el = root()
@@ -243,11 +279,11 @@ export function MarkdownFileView(props: FileRenderProps) {
 
   createEffect(() => {
     if (typeof window === "undefined") return
-    window.addEventListener("selectionchange", handleSelectionChange)
+    document.addEventListener("selectionchange", handleSelectionChange)
     window.addEventListener("mousedown", handleMouseDown)
     window.addEventListener("mouseup", handleMouseUp)
     onCleanup(() => {
-      window.removeEventListener("selectionchange", handleSelectionChange)
+      document.removeEventListener("selectionchange", handleSelectionChange)
       window.removeEventListener("mousedown", handleMouseDown)
       window.removeEventListener("mouseup", handleMouseUp)
     })
@@ -259,17 +295,33 @@ export function MarkdownFileView(props: FileRenderProps) {
 
   return (
     <div
-      ref={(el) => {
-        setRoot(el)
-        props.surfaceRef?.(surface)
-      }}
       data-component="markdown"
       data-markdown-view="file"
       classList={{
         ...(props.classList ?? {}),
         [props.class ?? ""]: !!props.class,
       }}
-    />
+    >
+      <div data-slot="markdown-file-copy">
+        <Tooltip value={label()} placement="left">
+          <IconButton
+            type="button"
+            icon={copied() ? "check" : "copy"}
+            variant="ghost"
+            class="size-6 rounded-md"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={handleCopy}
+            aria-label={label()}
+          />
+        </Tooltip>
+      </div>
+      <div
+        ref={(el) => {
+          setRoot(el)
+          props.surfaceRef?.(surface)
+        }}
+      />
+    </div>
   )
 }
 
