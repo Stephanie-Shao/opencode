@@ -114,6 +114,42 @@ export const FileRoutes = lazy(() =>
         return c.json([])
       },
     )
+    .post(
+      "/file/mkdir",
+      describeRoute({
+        summary: "Create directory",
+        description: "Create a new directory at the specified path.",
+        operationId: "file.mkdir",
+        responses: {
+          200: {
+            description: "Directory created",
+            content: {
+              "application/json": {
+                schema: resolver(z.object({ path: z.string() })),
+              },
+            },
+          },
+        },
+      }),
+      validator(
+        "json",
+        z.object({
+          path: z.string(),
+        }),
+      ),
+      async (c) => {
+        const { path: dirPath } = c.req.valid("json")
+        const { mkdir } = await import("node:fs/promises")
+        const nodePath = await import("node:path")
+        const { Instance } = await import("../../project/instance")
+        const resolved = nodePath.default.join(Instance.directory, dirPath)
+        if (!Instance.containsPath(resolved)) {
+          return c.json({ error: "Access denied: path escapes project directory" }, 403)
+        }
+        await mkdir(resolved, { recursive: true })
+        return c.json({ path: resolved })
+      },
+    )
     .get(
       "/file",
       describeRoute({

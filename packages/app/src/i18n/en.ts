@@ -23,6 +23,7 @@ export const dict = {
 
   "command.sidebar.toggle": "Toggle sidebar",
   "command.project.open": "Open project",
+  "command.scriptProject.open": "Script projects",
   "command.provider.connect": "Connect provider",
   "command.server.switch": "Switch server",
   "command.settings.open": "Open settings",
@@ -92,6 +93,18 @@ export const dict = {
   "palette.empty": "No results found",
   "palette.group.commands": "Commands",
   "palette.group.files": "Files",
+
+  "dialog.scriptProject.title": "Open project",
+  "dialog.scriptProject.createTitle": "New project",
+  "dialog.scriptProject.namePlaceholder": "Enter script name",
+  "dialog.scriptProject.create": "Create",
+  "dialog.scriptProject.newProject": "New project",
+  "dialog.scriptProject.empty": "No script projects",
+  "dialog.scriptProject.emptyHint": "Click the button below to create a new script",
+  "dialog.scriptProject.loadError": "Failed to load project list",
+  "dialog.scriptProject.nameRequired": "Please enter a script name",
+  "dialog.scriptProject.nameExists": "A script with this name already exists",
+  "dialog.scriptProject.createError": "Failed to create project",
 
   "dialog.provider.search.placeholder": "Search providers",
   "dialog.provider.empty": "No providers found",
@@ -221,6 +234,7 @@ export const dict = {
   "common.submit": "Submit",
   "common.save": "Save",
   "common.saving": "Saving...",
+  "common.creating": "Creating...",
   "common.default": "Default",
   "common.attachment": "attachment",
 

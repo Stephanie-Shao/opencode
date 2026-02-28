@@ -28,6 +28,7 @@ export const dict = {
   "command.sidebar.toggle": "切换侧边栏",
 
   "command.project.open": "打开项目",
+  "command.scriptProject.open": "剧本项目",
 
   "command.provider.connect": "连接提供商",
 
@@ -119,6 +120,18 @@ export const dict = {
   "palette.empty": "未找到结果",
   "palette.group.commands": "命令",
   "palette.group.files": "文件",
+
+  "dialog.scriptProject.title": "打开项目",
+  "dialog.scriptProject.createTitle": "新建项目",
+  "dialog.scriptProject.namePlaceholder": "请输入剧本名称",
+  "dialog.scriptProject.create": "创建",
+  "dialog.scriptProject.newProject": "新建项目",
+  "dialog.scriptProject.empty": "暂无剧本项目",
+  "dialog.scriptProject.emptyHint": "点击下方按钮创建新剧本",
+  "dialog.scriptProject.loadError": "加载项目列表失败",
+  "dialog.scriptProject.nameRequired": "请输入剧本名称",
+  "dialog.scriptProject.nameExists": "该剧本名称已存在",
+  "dialog.scriptProject.createError": "创建项目失败",
 
   "dialog.provider.search.placeholder": "搜索提供商",
   "dialog.provider.empty": "未找到提供商",
@@ -242,6 +255,7 @@ export const dict = {
   "common.submit": "提交",
   "common.save": "保存",
   "common.saving": "保存中...",
+  "common.creating": "创建中...",
   "common.default": "默认",
   "common.attachment": "附件",
 
