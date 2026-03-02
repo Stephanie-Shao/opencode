@@ -146,3 +146,43 @@ If you are on a corporate proxy, ensure local connections to the OpenCode server
 ```bash
 export NO_PROXY=localhost,127.0.0.1
 ```
+
+## Verification Checklist
+
+Local smoke:
+
+```bash
+OPENCODE_SERVER_PASSWORD=secret opencode web \
+  --hostname 127.0.0.1 \
+  --port 4096
+```
+
+- Open `http://localhost:4096` and verify the UI loads and sessions list renders.
+
+Custom UI upstream smoke:
+
+```bash
+OPENCODE_SERVER_PASSWORD=secret opencode web \
+  --hostname 127.0.0.1 \
+  --port 4096 \
+  --ui-url https://ui.example.com
+```
+
+- UI should load from the configured upstream; API calls should still hit the same origin.
+
+Local UI assets smoke:
+
+```bash
+bun run --cwd packages/app build
+OPENCODE_SERVER_PASSWORD=secret opencode web \
+  --hostname 127.0.0.1 \
+  --port 4096 \
+  --ui-dir ./packages/app/dist
+```
+
+- UI should load without any upstream dependency.
+
+Reverse proxy smoke (TLS termination):
+
+- Reverse proxy forwards to `http://127.0.0.1:4096`.
+- Verify HTTP basic auth prompts and UI works end-to-end over HTTPS.
