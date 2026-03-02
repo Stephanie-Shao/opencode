@@ -1402,6 +1402,10 @@ export type ServerConfig = {
    * Additional domains to allow for CORS
    */
   cors?: Array<string>
+  /**
+   * Proxy web UI assets from this upstream URL
+   */
+  uiUrl?: string
 }
 
 export type PermissionActionConfig = "ask" | "allow" | "deny"
@@ -1676,6 +1680,10 @@ export type Config = {
    * Theme name to use for the interface
    */
   theme?: string
+  /**
+   * Enable the creative-fitting open project UI in the web app
+   */
+  "enable-creative-fitting-ui"?: boolean
   keybinds?: KeybindsConfig
   logLevel?: LogLevel
   /**
@@ -4268,6 +4276,28 @@ export type FindSymbolsResponses = {
 }
 
 export type FindSymbolsResponse = FindSymbolsResponses[keyof FindSymbolsResponses]
+
+export type FileMkdirData = {
+  body?: {
+    path: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/file/mkdir"
+}
+
+export type FileMkdirResponses = {
+  /**
+   * Directory created
+   */
+  200: {
+    path: string
+  }
+}
+
+export type FileMkdirResponse = FileMkdirResponses[keyof FileMkdirResponses]
 
 export type FileListData = {
   body?: never

@@ -26,6 +26,7 @@ import type {
   EventTuiToastShow,
   ExperimentalResourceListResponses,
   FileListResponses,
+  FileMkdirResponses,
   FilePartInput,
   FilePartSource,
   FileReadResponses,
@@ -2265,6 +2266,41 @@ export class Find extends HeyApiClient {
 }
 
 export class File extends HeyApiClient {
+  /**
+   * Create directory
+   *
+   * Create a new directory at the specified path.
+   */
+  public mkdir<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      path?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<FileMkdirResponses, unknown, ThrowOnError>({
+      url: "/file/mkdir",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
   /**
    * List files
    *
