@@ -26,13 +26,12 @@ interface DialogOpenProjectProps {
 
 // 获取项目列表
 async function fetchProjects(sdk: ReturnType<typeof useGlobalSDK>): Promise<ScriptProject[]> {
-  const response = await sdk.client.file.list({ path: "" })
+  const response = await sdk.client.project.discover()
   return (response.data || [])
-    .filter((node) => node.type === "directory")
-    .map((node) => ({
-      name: node.name,
-      path: node.absolute,
-      updatedAt: (node as any).updatedAt || (node as any).mtime || Date.now(),
+    .map((p) => ({
+      name: p.name,
+      path: p.path,
+      updatedAt: p.updatedAt,
     }))
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }
@@ -116,7 +115,9 @@ export function DialogOpenProject(props: DialogOpenProjectProps) {
           setError(language.t("dialog.scriptProject.createError"))
           return
         }
-        setProjects((prev) => [{ name: result.name, path: result.path, updatedAt: Date.now() }, ...prev])
+        if (result.gitInitialized) {
+          setProjects((prev) => [{ name: result.name, path: result.path, updatedAt: Date.now() }, ...prev])
+        }
         if (!result.gitInitialized) {
           showToast({ variant: "error", title: language.t("dialog.scriptProject.gitInitFailed") })
         }

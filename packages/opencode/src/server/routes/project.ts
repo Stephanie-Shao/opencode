@@ -10,6 +10,65 @@ import { lazy } from "../../util/lazy"
 export const ProjectRoutes = lazy(() =>
   new Hono()
     .get(
+      "/discover",
+      describeRoute({
+        summary: "Discover git projects",
+        description: "List top-level directories in the current workspace that have git initialized.",
+        operationId: "project.discover",
+        responses: {
+          200: {
+            description: "Discovered projects",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z
+                    .object({
+                      name: z.string(),
+                      path: z.string(),
+                      updatedAt: z.number(),
+                    })
+                    .array(),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        const { readdir, stat } = await import("node:fs/promises")
+        const nodePath = await import("node:path")
+
+        const entries = await readdir(Instance.directory, { withFileTypes: true })
+        const projects = (
+          await Promise.all(
+            entries
+              .filter((e) => e.isDirectory())
+              .map(async (e) => {
+                const dir = nodePath.default.join(Instance.directory, e.name)
+                const gitPath = nodePath.default.join(dir, ".git")
+                const ok = await stat(gitPath)
+                  .then(() => true)
+                  .catch(() => false)
+                if (!ok) return
+
+                const updatedAt = await stat(dir)
+                  .then((s) => s.mtimeMs)
+                  .catch(() => Date.now())
+                return {
+                  name: e.name,
+                  path: dir,
+                  updatedAt,
+                }
+              }),
+          )
+        )
+          .filter((p): p is { name: string; path: string; updatedAt: number } => Boolean(p))
+          .toSorted((a, b) => b.updatedAt - a.updatedAt)
+
+        return c.json(projects)
+      },
+    )
+    .get(
       "/",
       describeRoute({
         summary: "List all projects",

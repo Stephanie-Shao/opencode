@@ -2398,6 +2398,28 @@ export type AuthSetResponses = {
 
 export type AuthSetResponse = AuthSetResponses[keyof AuthSetResponses]
 
+export type ProjectDiscoverData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/project/discover"
+}
+
+export type ProjectDiscoverResponses = {
+  /**
+   * Discovered projects
+   */
+  200: Array<{
+    name: string
+    path: string
+    updatedAt: number
+  }>
+}
+
+export type ProjectDiscoverResponse = ProjectDiscoverResponses[keyof ProjectDiscoverResponses]
+
 export type ProjectListData = {
   body?: never
   path?: never

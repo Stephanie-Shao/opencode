@@ -72,6 +72,7 @@ import type {
   PermissionRespondResponses,
   PermissionRuleset,
   ProjectCurrentResponses,
+  ProjectDiscoverResponses,
   ProjectListResponses,
   ProjectUpdateErrors,
   ProjectUpdateResponses,
@@ -358,6 +359,25 @@ export class Auth extends HeyApiClient {
 }
 
 export class Project extends HeyApiClient {
+  /**
+   * Discover git projects
+   *
+   * List top-level directories in the current workspace that have git initialized.
+   */
+  public discover<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<ProjectDiscoverResponses, unknown, ThrowOnError>({
+      url: "/project/discover",
+      ...options,
+      ...params,
+    })
+  }
+
   /**
    * List all projects
    *
