@@ -35,10 +35,10 @@ function headers() {
 }
 
 function configure(input: { uiDir?: string; uiUrl?: string }) {
-  Server.configureUI({
-    uiDir: input.uiDir,
-    uiUrl: input.uiUrl,
-  })
+  const next: { uiDir?: string; uiUrl?: string } = {}
+  if ("uiDir" in input) next.uiDir = input.uiDir
+  if ("uiUrl" in input) next.uiUrl = input.uiUrl
+  Server.configureUI(next)
 }
 
 function patchFetch() {
@@ -124,6 +124,10 @@ describe("UI proxy upstream", () => {
       fetch.restore()
       configure({ uiDir: undefined, uiUrl: undefined })
     }
+  })
+
+  test("configureUI rejects non-http(s) uiUrl", async () => {
+    expect(() => Server.configureUI({ uiUrl: "ftp://ui.example.com" })).toThrow()
   })
 
   test("configureUI only updates fields present in input", async () => {
