@@ -83,25 +83,25 @@ export namespace Server {
       }
 
       if (!URL.canParse(input.uiUrl)) {
-        throw new Error(`Invalid uiUrl: ${input.uiUrl}`)
+        throw new Error("Invalid uiUrl")
       }
 
       const url = new URL(input.uiUrl)
 
       if (url.protocol !== "http:" && url.protocol !== "https:") {
-        throw new Error(`Invalid uiUrl: ${input.uiUrl}`)
+        throw new Error("Invalid uiUrl")
       }
 
       if (url.username || url.password) {
-        throw new Error(`Invalid uiUrl: ${input.uiUrl}`)
+        throw new Error("Invalid uiUrl")
       }
 
       if (url.search || url.hash) {
-        throw new Error(`Invalid uiUrl: ${input.uiUrl}`)
+        throw new Error("Invalid uiUrl")
       }
 
       if (url.pathname !== "/") {
-        throw new Error(`Invalid uiUrl: ${input.uiUrl}`)
+        throw new Error("Invalid uiUrl")
       }
 
       _uiUpstream = { base: url.origin, host: url.host }

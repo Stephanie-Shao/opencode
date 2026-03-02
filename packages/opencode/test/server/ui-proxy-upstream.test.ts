@@ -85,6 +85,15 @@ function patchFetch() {
   }
 }
 
+function thrown(fn: () => void) {
+  try {
+    fn()
+  } catch (e) {
+    return e
+  }
+  throw new Error("Expected error to be thrown")
+}
+
 describe("UI proxy upstream", () => {
   test("default behavior proxies to https://app.opencode.ai/", async () => {
     configure({ uiDir: undefined, uiUrl: undefined })
@@ -127,7 +136,38 @@ describe("UI proxy upstream", () => {
   })
 
   test("configureUI rejects non-http(s) uiUrl", async () => {
-    expect(() => Server.configureUI({ uiUrl: "ftp://ui.example.com" })).toThrow()
+    const uiUrl = "ftp://ui.example.com"
+    const err = thrown(() => Server.configureUI({ uiUrl }))
+    expect(err).toBeInstanceOf(Error)
+    expect((err as Error).message).toBe("Invalid uiUrl")
+  })
+
+  test("configureUI rejects uiUrl with credentials", async () => {
+    const uiUrl = "https://user:pass@ui.example.com"
+    const err = thrown(() => Server.configureUI({ uiUrl }))
+    expect(err).toBeInstanceOf(Error)
+    expect((err as Error).message).toBe("Invalid uiUrl")
+  })
+
+  test("configureUI rejects uiUrl with search params", async () => {
+    const uiUrl = "https://ui.example.com?x=1"
+    const err = thrown(() => Server.configureUI({ uiUrl }))
+    expect(err).toBeInstanceOf(Error)
+    expect((err as Error).message).toBe("Invalid uiUrl")
+  })
+
+  test("configureUI rejects uiUrl with hash", async () => {
+    const uiUrl = "https://ui.example.com#x"
+    const err = thrown(() => Server.configureUI({ uiUrl }))
+    expect(err).toBeInstanceOf(Error)
+    expect((err as Error).message).toBe("Invalid uiUrl")
+  })
+
+  test("configureUI rejects uiUrl with path", async () => {
+    const uiUrl = "https://ui.example.com/foo"
+    const err = thrown(() => Server.configureUI({ uiUrl }))
+    expect(err).toBeInstanceOf(Error)
+    expect((err as Error).message).toBe("Invalid uiUrl")
   })
 
   test("configureUI only updates fields present in input", async () => {
