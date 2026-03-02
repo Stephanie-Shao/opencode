@@ -51,7 +51,18 @@ export namespace Server {
   let _url: URL | undefined
   let _corsWhitelist: string[] = []
   let _uiDir: string | undefined
-  let _uiUrl: string | undefined
+
+  type UiUpstream = {
+    base: string
+    host: string
+  }
+
+  const defaultUiUpstream: UiUpstream = {
+    base: "https://app.opencode.ai",
+    host: "app.opencode.ai",
+  }
+
+  let _uiUpstream: UiUpstream | undefined
 
   const csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; media-src 'self' data:; connect-src 'self' data:"
@@ -61,8 +72,24 @@ export namespace Server {
   }
 
   export function configureUI(input: { uiDir?: string; uiUrl?: string }) {
-    _uiDir = input.uiDir
-    _uiUrl = input.uiUrl
+    if ("uiDir" in input) {
+      _uiDir = input.uiDir
+    }
+
+    if ("uiUrl" in input) {
+      if (input.uiUrl === undefined) {
+        _uiUpstream = undefined
+        return
+      }
+
+      if (!URL.canParse(input.uiUrl)) {
+        throw new Error(`Invalid uiUrl: ${input.uiUrl}`)
+      }
+
+      const url = new URL(input.uiUrl)
+      const base = url.href.endsWith("/") ? url.href.slice(0, -1) : url.href
+      _uiUpstream = { base, host: url.host }
+    }
   }
 
   const app = new Hono()
@@ -587,14 +614,13 @@ export namespace Server {
 
           const reqPath = c.req.path
 
-          const upstream = _uiUrl ?? "https://app.opencode.ai"
-          const base = upstream.endsWith("/") ? upstream.slice(0, -1) : upstream
+          const upstream = _uiUpstream ?? defaultUiUpstream
 
-          const response = await proxy(`${base}${reqPath}`, {
+          const response = await proxy(`${upstream.base}${reqPath}`, {
             ...c.req,
             headers: {
               ...c.req.raw.headers,
-              host: new URL(upstream).host,
+              host: upstream.host,
             },
           })
           response.headers.set("Content-Security-Policy", csp)

@@ -126,6 +126,28 @@ describe("UI proxy upstream", () => {
     }
   })
 
+  test("configureUI only updates fields present in input", async () => {
+    Server.configureUI({ uiDir: undefined, uiUrl: undefined })
+    Server.configureUI({ uiUrl: "https://ui.example.com" })
+    Server.configureUI({ uiDir: undefined })
+
+    const fetch = patchFetch()
+    try {
+      const app = Server.App()
+      const response = await app.request("/", {
+        method: "GET",
+        headers: headers(),
+      })
+
+      expect(response.status).toBe(200)
+      expect(fetch.calls.url?.href).toBe("https://ui.example.com/")
+      expect(fetch.calls.host).toBe("ui.example.com")
+    } finally {
+      fetch.restore()
+      Server.configureUI({ uiDir: undefined, uiUrl: undefined })
+    }
+  })
+
   test("when upstream includes a port, Host header includes port", async () => {
     configure({ uiDir: undefined, uiUrl: "https://ui.example.com:4443" })
 
