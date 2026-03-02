@@ -49,10 +49,16 @@ function patchFetch() {
     host?: string
   } = { count: 0 }
 
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls.count++
+  const upstreams = new Set(["app.opencode.ai", "ui.example.com"])
 
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? new URL(input) : input instanceof URL ? input : new URL(input.url)
+
+    if (!upstreams.has(url.hostname)) {
+      return original(input as RequestInfo, init)
+    }
+
+    calls.count++
     calls.url = url
 
     const host = (() => {

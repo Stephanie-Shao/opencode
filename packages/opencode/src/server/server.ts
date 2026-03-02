@@ -635,7 +635,7 @@ export namespace Server {
           const response = await proxy(`${upstream.base}${reqPath}`, {
             ...c.req,
             headers: {
-              ...c.req.raw.headers,
+              ...Object.fromEntries(c.req.raw.headers),
               host: upstream.host,
             },
           })
