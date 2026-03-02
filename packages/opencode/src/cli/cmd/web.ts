@@ -3,6 +3,7 @@ import { UI } from "../ui"
 import { cmd } from "./cmd"
 import { withNetworkOptions, resolveNetworkOptions } from "../network"
 import { Flag } from "../../flag/flag"
+import { Config } from "../../config/config"
 import open from "open"
 import { networkInterfaces } from "os"
 
@@ -47,7 +48,8 @@ export const WebCommand = cmd({
     }
     const opts = await resolveNetworkOptions(args)
     const uiDir = (args as unknown as { "ui-dir"?: string })["ui-dir"]
-    const uiUrl = (args as unknown as { "ui-url"?: string })["ui-url"]
+    const flagUiUrl = (args as unknown as { "ui-url"?: string })["ui-url"]
+    const uiUrl = flagUiUrl !== undefined ? flagUiUrl : (await Config.global())?.server?.uiUrl
     const server = Server.listen({
       ...opts,
       uiDir,
