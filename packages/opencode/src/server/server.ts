@@ -625,12 +625,11 @@ export namespace Server {
     cors?: string[]
     uiDir?: string
     uiUrl?: string
-    uiUpstream?: string
   }) {
     _corsWhitelist = opts.cors ?? []
     configureUI({
       uiDir: opts.uiDir,
-      uiUrl: opts.uiUrl ?? opts.uiUpstream,
+      uiUrl: opts.uiUrl,
     })
 
     const args = {
