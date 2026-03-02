@@ -51,12 +51,18 @@ export namespace Server {
   let _url: URL | undefined
   let _corsWhitelist: string[] = []
   let _uiDir: string | undefined
+  let _uiUrl: string | undefined
 
   const csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; media-src 'self' data:; connect-src 'self' data:"
 
   export function url(): URL {
     return _url ?? new URL("http://localhost:4096")
+  }
+
+  export function configureUI(input: { uiDir?: string; uiUrl?: string }) {
+    _uiDir = input.uiDir
+    _uiUrl = input.uiUrl
   }
 
   const app = new Hono()
@@ -581,11 +587,14 @@ export namespace Server {
 
           const reqPath = c.req.path
 
-          const response = await proxy(`https://app.opencode.ai${reqPath}`, {
+          const upstream = _uiUrl ?? "https://app.opencode.ai"
+          const base = upstream.endsWith("/") ? upstream.slice(0, -1) : upstream
+
+          const response = await proxy(`${base}${reqPath}`, {
             ...c.req,
             headers: {
               ...c.req.raw.headers,
-              host: "app.opencode.ai",
+              host: new URL(upstream).host,
             },
           })
           response.headers.set("Content-Security-Policy", csp)
@@ -615,9 +624,14 @@ export namespace Server {
     mdnsDomain?: string
     cors?: string[]
     uiDir?: string
+    uiUrl?: string
+    uiUpstream?: string
   }) {
     _corsWhitelist = opts.cors ?? []
-    _uiDir = opts.uiDir
+    configureUI({
+      uiDir: opts.uiDir,
+      uiUrl: opts.uiUrl ?? opts.uiUpstream,
+    })
 
     const args = {
       hostname: opts.hostname,
