@@ -668,14 +668,14 @@ export namespace Server {
     uiDir?: string
     uiUrl?: string
   }) {
-    _corsWhitelist = opts.cors ?? []
-    _uiDir = opts.uiDir
-
     if (opts.uiDir !== undefined) {
       Server.configureUI({ uiUrl: undefined })
     } else {
       Server.configureUI({ uiUrl: opts.uiUrl })
     }
+
+    _corsWhitelist = opts.cors ?? []
+    _uiDir = opts.uiDir
 
     const args = {
       hostname: opts.hostname,

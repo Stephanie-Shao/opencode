@@ -295,4 +295,64 @@ describe("UI proxy upstream", () => {
       configure({ uiDir: undefined, uiUrl: undefined })
     }
   })
+
+  test("listen does not validate uiUrl when uiDir is set, and does not partially update globals when uiUrl is invalid", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "index.html"), "<html>hello</html>")
+      },
+    })
+
+    try {
+      const first = Server.listen({
+        port: 0,
+        hostname: "127.0.0.1",
+        uiDir: tmp.path,
+        uiUrl: "ftp://ui.example.com",
+      })
+      await first.stop(true)
+
+      const fetch1 = patchFetch()
+      try {
+        const app = Server.App()
+        const response = await app.request("/", {
+          method: "GET",
+          headers: headers(),
+        })
+
+        expect(response.status).toBe(200)
+        expect(await response.text()).toBe("<html>hello</html>")
+        expect(fetch1.calls.count).toBe(0)
+      } finally {
+        fetch1.restore()
+      }
+
+      const err = thrown(() =>
+        Server.listen({
+          port: 0,
+          hostname: "127.0.0.1",
+          uiDir: undefined,
+          uiUrl: "ftp://ui.example.com",
+        }),
+      )
+      expect((err as Error).message).toBe("Invalid uiUrl")
+
+      const fetch2 = patchFetch()
+      try {
+        const app = Server.App()
+        const response = await app.request("/", {
+          method: "GET",
+          headers: headers(),
+        })
+
+        expect(response.status).toBe(200)
+        expect(await response.text()).toBe("<html>hello</html>")
+        expect(fetch2.calls.count).toBe(0)
+      } finally {
+        fetch2.restore()
+      }
+    } finally {
+      configure({ uiDir: undefined, uiUrl: undefined })
+    }
+  })
 })
