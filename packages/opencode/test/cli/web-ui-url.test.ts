@@ -5,6 +5,7 @@ import { Config } from "../../src/config/config"
 import { Global } from "../../src/global"
 
 let seen: unknown
+const password = process.env.OPENCODE_SERVER_PASSWORD
 
 mock.module("../../src/server/server", () => ({
   Server: {
@@ -19,6 +20,12 @@ afterEach(async () => {
   seen = undefined
   Config.global.reset()
   await fs.rm(path.join(Global.Path.config, "opencode.json"), { force: true }).catch(() => {})
+
+  if (password === undefined) {
+    delete process.env.OPENCODE_SERVER_PASSWORD
+  } else {
+    process.env.OPENCODE_SERVER_PASSWORD = password
+  }
 })
 
 test("web uses server.uiUrl from config when --ui-url is not set", async () => {
