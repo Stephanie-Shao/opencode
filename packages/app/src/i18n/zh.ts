@@ -132,6 +132,7 @@ export const dict = {
   "dialog.scriptProject.nameRequired": "请输入剧本名称",
   "dialog.scriptProject.nameExists": "该剧本名称已存在",
   "dialog.scriptProject.createError": "创建项目失败",
+  "dialog.scriptProject.gitInitFailed": "项目已创建，但 Git 初始化失败，请手动执行 git init",
 
   "dialog.provider.search.placeholder": "搜索提供商",
   "dialog.provider.empty": "未找到提供商",

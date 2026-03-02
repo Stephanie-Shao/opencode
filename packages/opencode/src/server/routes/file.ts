@@ -6,6 +6,7 @@ import { Ripgrep } from "../../file/ripgrep"
 import { LSP } from "../../lsp"
 import { Instance } from "../../project/instance"
 import { lazy } from "../../util/lazy"
+import { git } from "../../util/git"
 
 export const FileRoutes = lazy(() =>
   new Hono()
@@ -147,7 +148,8 @@ export const FileRoutes = lazy(() =>
           return c.json({ error: "Access denied: path escapes project directory" }, 403)
         }
         await mkdir(resolved, { recursive: true })
-        return c.json({ path: resolved })
+        const gitResult = await git(["init"], { cwd: resolved })
+        return c.json({ path: resolved, gitInitialized: gitResult.exitCode === 0 })
       },
     )
     .get(

@@ -10,6 +10,7 @@ import { useNavigate } from "@solidjs/router"
 import { useLayout } from "@/context/layout"
 import { base64Encode } from "@opencode-ai/util/encode"
 import { useServer } from "@/context/server"
+import { showToast } from "@opencode-ai/ui/toast"
 
 // 剧本项目类型
 interface ScriptProject {
@@ -40,7 +41,7 @@ async function fetchProjects(sdk: ReturnType<typeof useGlobalSDK>): Promise<Scri
 async function createProject(
   sdk: ReturnType<typeof useGlobalSDK>,
   projectName: string,
-): Promise<{ path: string; name: string } | null> {
+): Promise<{ path: string; name: string; gitInitialized: boolean } | null> {
   const sanitizedName = projectName.replace(/[<>:"\\|?*]/g, "").trim()
   if (!sanitizedName) return null
 
@@ -54,7 +55,7 @@ async function createProject(
     throw new Error(msg)
   }
   const data = await response.json()
-  return { path: data.path, name: sanitizedName }
+  return { path: data.path, name: sanitizedName, gitInitialized: data.gitInitialized as boolean }
 }
 
 export function DialogOpenProject(props: DialogOpenProjectProps) {
@@ -116,6 +117,9 @@ export function DialogOpenProject(props: DialogOpenProjectProps) {
           return
         }
         setProjects((prev) => [{ name: result.name, path: result.path, updatedAt: Date.now() }, ...prev])
+        if (!result.gitInitialized) {
+          showToast({ variant: "error", title: language.t("dialog.scriptProject.gitInitFailed") })
+        }
         openProject(result.path)
       })
       .catch((err: unknown) => {

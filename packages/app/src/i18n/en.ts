@@ -105,6 +105,7 @@ export const dict = {
   "dialog.scriptProject.nameRequired": "Please enter a script name",
   "dialog.scriptProject.nameExists": "A script with this name already exists",
   "dialog.scriptProject.createError": "Failed to create project",
+  "dialog.scriptProject.gitInitFailed": "Project created, but Git initialization failed. Run git init manually.",
 
   "dialog.provider.search.placeholder": "Search providers",
   "dialog.provider.empty": "No providers found",
