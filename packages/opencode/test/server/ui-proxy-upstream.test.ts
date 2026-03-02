@@ -141,6 +141,59 @@ describe("UI proxy upstream", () => {
     }
   })
 
+  test("listen resets upstream when uiUrl is omitted", async () => {
+    configure({ uiDir: undefined, uiUrl: undefined })
+
+    const lock = (() => {
+      try {
+        return Bun.serve({
+          port: 4096,
+          hostname: "127.0.0.1",
+          fetch() {
+            return new Response("locked", { status: 200 })
+          },
+        })
+      } catch {
+        return undefined
+      }
+    })()
+
+    try {
+      const first = Server.listen({
+        port: 0,
+        hostname: "127.0.0.1",
+        uiDir: undefined,
+        uiUrl: "https://ui.example.com",
+      })
+      await first.stop(true)
+
+      const second = Server.listen({
+        port: 0,
+        hostname: "127.0.0.1",
+        uiDir: undefined,
+      })
+      await second.stop(true)
+
+      const fetch = patchFetch()
+      try {
+        const app = Server.App()
+        const response = await app.request("/", {
+          method: "GET",
+          headers: headers(),
+        })
+
+        expect(response.status).toBe(200)
+        expect(fetch.calls.url?.href).toBe("https://app.opencode.ai/")
+        expect(fetch.calls.host).toBe("app.opencode.ai")
+      } finally {
+        fetch.restore()
+        configure({ uiDir: undefined, uiUrl: undefined })
+      }
+    } finally {
+      await lock?.stop(true)
+    }
+  })
+
   test("configureUI rejects non-http(s) uiUrl", async () => {
     const uiUrl = "ftp://ui.example.com"
     const err = thrown(() => Server.configureUI({ uiUrl }))
