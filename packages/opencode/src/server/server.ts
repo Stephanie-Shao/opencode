@@ -624,13 +624,9 @@ export namespace Server {
     mdnsDomain?: string
     cors?: string[]
     uiDir?: string
-    uiUrl?: string
   }) {
     _corsWhitelist = opts.cors ?? []
-    configureUI({
-      uiDir: opts.uiDir,
-      uiUrl: opts.uiUrl,
-    })
+    _uiDir = opts.uiDir
 
     const args = {
       hostname: opts.hostname,
