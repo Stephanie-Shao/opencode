@@ -99,7 +99,7 @@ export function FileTabContent(props: { tab: string }) {
   const selectedLines = createMemo(() => {
     const p = path()
     if (!p) return null
-    if (file.ready()) return file.selectedLines(p) ?? null
+    if (file.ready()) return (file.selectedLines(p) as SelectedLineRange | undefined) ?? null
     return getSessionHandoff(sessionKey())?.files[p] ?? null
   })
 

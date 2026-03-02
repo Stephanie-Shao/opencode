@@ -1,9 +1,17 @@
 import type { FileNode } from "@opencode-ai/sdk/v2"
 
-type WatcherEvent = {
-  type: string
-  properties: unknown
-}
+type WatcherEvent =
+  | {
+      type: "file.watcher.updated"
+      properties: {
+        file: string
+        event: "add" | "change" | "unlink"
+      }
+    }
+  | {
+      file: string
+      event: "add" | "change" | "unlink"
+    }
 
 type WatcherOps = {
   normalize: (input: string) => string
@@ -15,12 +23,24 @@ type WatcherOps = {
   refreshDir: (path: string) => void
 }
 
-export function invalidateFromWatcher(event: WatcherEvent, ops: WatcherOps) {
-  if (event.type !== "file.watcher.updated") return
-  const props =
-    typeof event.properties === "object" && event.properties ? (event.properties as Record<string, unknown>) : undefined
-  const rawPath = typeof props?.file === "string" ? props.file : undefined
-  const kind = typeof props?.event === "string" ? props.event : undefined
+export function invalidateFromWatcher(event: unknown, ops: WatcherOps) {
+  // Support both old format { type, properties } and new format { file, event }
+  let rawPath: string | undefined
+  let kind: string | undefined
+
+  if (typeof event !== "object" || event === null) return
+
+  if ("type" in event && (event as { type: unknown }).type === "file.watcher.updated" && "properties" in event) {
+    // Old format
+    const props = (event as { properties: Record<string, unknown> }).properties
+    rawPath = typeof props?.file === "string" ? props.file : undefined
+    kind = typeof props?.event === "string" ? props.event : undefined
+  } else if ("file" in event && "event" in event) {
+    // New format (flat structure)
+    rawPath = typeof (event as { file: unknown }).file === "string" ? (event as { file: string }).file : undefined
+    kind = typeof (event as { event: unknown }).event === "string" ? (event as { event: string }).event : undefined
+  }
+
   if (!rawPath) return
   if (!kind) return
 

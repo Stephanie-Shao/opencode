@@ -6,6 +6,7 @@ import { Ripgrep } from "../../file/ripgrep"
 import { LSP } from "../../lsp"
 import { Instance } from "../../project/instance"
 import { lazy } from "../../util/lazy"
+import { git } from "../../util/git"
 
 export const FileRoutes = lazy(() =>
   new Hono()
@@ -112,6 +113,43 @@ export const FileRoutes = lazy(() =>
       return c.json(result)
       */
         return c.json([])
+      },
+    )
+    .post(
+      "/file/mkdir",
+      describeRoute({
+        summary: "Create directory",
+        description: "Create a new directory at the specified path.",
+        operationId: "file.mkdir",
+        responses: {
+          200: {
+            description: "Directory created",
+            content: {
+              "application/json": {
+                schema: resolver(z.object({ path: z.string() })),
+              },
+            },
+          },
+        },
+      }),
+      validator(
+        "json",
+        z.object({
+          path: z.string(),
+        }),
+      ),
+      async (c) => {
+        const { path: dirPath } = c.req.valid("json")
+        const { mkdir } = await import("node:fs/promises")
+        const nodePath = await import("node:path")
+        const { Instance } = await import("../../project/instance")
+        const resolved = nodePath.default.join(Instance.directory, dirPath)
+        if (!Instance.containsPath(resolved)) {
+          return c.json({ error: "Access denied: path escapes project directory" }, 403)
+        }
+        await mkdir(resolved, { recursive: true })
+        const gitResult = await git(["init"], { cwd: resolved })
+        return c.json({ path: resolved, gitInitialized: gitResult.exitCode === 0 })
       },
     )
     .get(

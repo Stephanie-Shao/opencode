@@ -53,6 +53,7 @@ import { useCommand, type CommandOption } from "@/context/command"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
 import { navStart } from "@/utils/perf"
 import { DialogSelectDirectory } from "@/components/dialog-select-directory"
+import { DialogOpenProject } from "@/components/dialog-open-project"
 import { DialogEditProject } from "@/components/dialog-edit-project"
 import { Titlebar } from "@/components/titlebar"
 import { useServer } from "@/context/server"
@@ -1195,6 +1196,13 @@ export default function Layout(props: ParentProps) {
     }
   }
 
+  function openScriptProjectDialog() {
+    dialog.show(
+      () => <DialogOpenProject onSelect={(path) => openProject(path)} />,
+      () => {},
+    )
+  }
+
   const deleteWorkspace = async (root: string, directory: string) => {
     if (directory === root) return
 
@@ -1960,7 +1968,7 @@ export default function Layout(props: ParentProps) {
               handleDragOver={handleDragOver}
               openProjectLabel={language.t("command.project.open")}
               openProjectKeybind={() => command.keybind("project.open")}
-              onOpenProject={chooseProject}
+              onOpenProject={openScriptProjectDialog}
               renderProjectOverlay={() => (
                 <ProjectDragOverlay projects={() => layout.projects.list()} activeProject={() => store.activeProject} />
               )}
@@ -2025,7 +2033,7 @@ export default function Layout(props: ParentProps) {
               handleDragOver={handleDragOver}
               openProjectLabel={language.t("command.project.open")}
               openProjectKeybind={() => command.keybind("project.open")}
-              onOpenProject={chooseProject}
+              onOpenProject={openScriptProjectDialog}
               renderProjectOverlay={() => (
                 <ProjectDragOverlay projects={() => layout.projects.list()} activeProject={() => store.activeProject} />
               )}
