@@ -23,20 +23,22 @@ type WatcherOps = {
   refreshDir: (path: string) => void
 }
 
-export function invalidateFromWatcher(event: WatcherEvent, ops: WatcherOps) {
+export function invalidateFromWatcher(event: unknown, ops: WatcherOps) {
   // Support both old format { type, properties } and new format { file, event }
   let rawPath: string | undefined
   let kind: string | undefined
 
-  if ("type" in event && event.type === "file.watcher.updated" && "properties" in event) {
+  if (typeof event !== "object" || event === null) return
+
+  if ("type" in event && (event as { type: unknown }).type === "file.watcher.updated" && "properties" in event) {
     // Old format
-    const props = event.properties
+    const props = (event as { properties: Record<string, unknown> }).properties
     rawPath = typeof props?.file === "string" ? props.file : undefined
     kind = typeof props?.event === "string" ? props.event : undefined
   } else if ("file" in event && "event" in event) {
     // New format (flat structure)
-    rawPath = typeof event.file === "string" ? event.file : undefined
-    kind = typeof event.event === "string" ? event.event : undefined
+    rawPath = typeof (event as { file: unknown }).file === "string" ? (event as { file: string }).file : undefined
+    kind = typeof (event as { event: unknown }).event === "string" ? (event as { event: string }).event : undefined
   }
 
   if (!rawPath) return
