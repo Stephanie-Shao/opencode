@@ -66,8 +66,8 @@ export function DialogOpenProject(props: DialogOpenProjectProps) {
   const layout = useLayout()
   const server = useServer()
 
-  // 工作区路径来自服务器报告的当前项目目录
-  const workspacePath = createMemo(() => sync.data.path.directory)
+  // discover() now lists projects from the user's home directory
+  const workspacePath = createMemo(() => sync.data.path.home || sync.data.path.directory || "")
 
   const [projects, setProjects] = createSignal<ScriptProject[]>([])
   const [loading, setLoading] = createSignal(false)

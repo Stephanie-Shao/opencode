@@ -3,6 +3,7 @@ import { describeRoute, validator } from "hono-openapi"
 import { resolver } from "hono-openapi"
 import { Instance } from "../../project/instance"
 import { Project } from "../../project/project"
+import { Global } from "@/global"
 import z from "zod"
 import { errors } from "../error"
 import { lazy } from "../../util/lazy"
@@ -13,7 +14,7 @@ export const ProjectRoutes = lazy(() =>
       "/discover",
       describeRoute({
         summary: "Discover git projects",
-        description: "List top-level directories in the current workspace that have git initialized.",
+        description: "List top-level directories in the user's home directory that have git initialized.",
         operationId: "project.discover",
         responses: {
           200: {
@@ -38,13 +39,14 @@ export const ProjectRoutes = lazy(() =>
         const { readdir, stat } = await import("node:fs/promises")
         const nodePath = await import("node:path")
 
-        const entries = await readdir(Instance.directory, { withFileTypes: true })
+        const root = Global.Path.home
+        const entries = await readdir(root, { withFileTypes: true })
         const projects = (
           await Promise.all(
             entries
               .filter((e) => e.isDirectory())
               .map(async (e) => {
-                const dir = nodePath.default.join(Instance.directory, e.name)
+                const dir = nodePath.default.join(root, e.name)
                 const gitPath = nodePath.default.join(dir, ".git")
                 const ok = await stat(gitPath)
                   .then(() => true)
