@@ -7,9 +7,117 @@ import { Global } from "@/global"
 import z from "zod"
 import { errors } from "../error"
 import { lazy } from "../../util/lazy"
+import { Filesystem } from "@/util/filesystem"
+import { git } from "../../util/git"
 
 export const ProjectRoutes = lazy(() =>
   new Hono()
+    .post(
+      "/create",
+      describeRoute({
+        summary: "Create project",
+        description: "Create a new project directory under the user's home directory and initialize git.",
+        operationId: "project.create",
+        responses: {
+          200: {
+            description: "Project created",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    path: z.string(),
+                    name: z.string(),
+                    gitInitialized: z.boolean(),
+                  }),
+                ),
+              },
+            },
+          },
+          400: {
+            description: "Bad request",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.union([
+                    z.object({ error: z.string() }),
+                    z.object({
+                      data: z.any(),
+                      errors: z.array(z.record(z.string(), z.any())),
+                      success: z.literal(false),
+                    }),
+                  ]),
+                ),
+              },
+            },
+          },
+          403: {
+            description: "Forbidden",
+            content: {
+              "application/json": {
+                schema: resolver(z.object({ error: z.string() })),
+              },
+            },
+          },
+          409: {
+            description: "Conflict",
+            content: {
+              "application/json": {
+                schema: resolver(z.object({ error: z.string() })),
+              },
+            },
+          },
+        },
+      }),
+      validator(
+        "json",
+        z.object({
+          name: z.string(),
+        }),
+      ),
+      async (c) => {
+        const input = c.req.valid("json")
+
+        const name = input.name.trim()
+        if (!name || name === "." || name === ".." || name.includes("/") || name.includes("\\")) {
+          return c.json({ error: "Invalid project name" }, 400)
+        }
+
+        const sanitized = name.replace(/[<>:"\\|?*]/g, "").trim()
+        if (!sanitized || sanitized === "." || sanitized === "..") {
+          return c.json({ error: "Invalid project name" }, 400)
+        }
+
+        const nodePath = await import("node:path")
+        const { mkdir } = await import("node:fs/promises")
+
+        const root = Global.Path.home
+        const resolved = nodePath.default.resolve(root, sanitized)
+        if (!Filesystem.contains(root, resolved)) {
+          return c.json({ error: "Access denied: path escapes home directory" }, 403)
+        }
+
+        const created = await mkdir(resolved).then(
+          () => true,
+          (e) => {
+            if (typeof e === "object" && e !== null && "code" in e && (e as { code: string }).code === "EEXIST") {
+              return false
+            }
+            throw e
+          },
+        )
+
+        if (!created) {
+          return c.json({ error: "Project already exists" }, 409)
+        }
+
+        const result = await git(["init"], { cwd: resolved })
+        return c.json({
+          path: resolved,
+          name: sanitized,
+          gitInitialized: result.exitCode === 0,
+        })
+      },
+    )
     .get(
       "/discover",
       describeRoute({

@@ -58,6 +58,30 @@ describe("GET /project/discover", () => {
       expect(response.headers.get("content-type") ?? "").toContain("application/json")
       const data = await response.json()
       expect(data.map((p: any) => p.name).toSorted()).toEqual(["repo-dir", "repo-file"])
+
+      const created = await app.request("/project/create", {
+        method: "POST",
+        headers: {
+          ...headers(tmp.path),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ name: "created" }),
+      })
+
+      expect(created.status).toBe(200)
+      expect(created.headers.get("content-type") ?? "").toContain("application/json")
+      const gitInitialized = Boolean((await created.json()).gitInitialized)
+
+      const discovered = await app.request("/project/discover", {
+        method: "GET",
+        headers: headers(tmp.path),
+      })
+
+      expect(discovered.status).toBe(200)
+      expect(discovered.headers.get("content-type") ?? "").toContain("application/json")
+      const names = (await discovered.json()).map((p: any) => p.name)
+      if (gitInitialized) expect(names).toContain("created")
+      if (!gitInitialized) expect(names).not.toContain("created")
     } finally {
       process.env.OPENCODE_TEST_HOME = prevHome
     }
