@@ -40,21 +40,32 @@ async function fetchProjects(sdk: ReturnType<typeof useGlobalSDK>): Promise<Scri
 async function createProject(
   sdk: ReturnType<typeof useGlobalSDK>,
   projectName: string,
+  auth?: Record<string, string>,
 ): Promise<{ path: string; name: string; gitInitialized: boolean } | null> {
   const sanitizedName = projectName.replace(/[<>:"\\|?*]/g, "").trim()
   if (!sanitizedName) return null
 
-  const response = await fetch(`${sdk.url}/file/mkdir`, {
+  const response = await fetch(`${sdk.url}/project/create`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: sanitizedName }),
+    headers: { "Content-Type": "application/json", ...auth },
+    body: JSON.stringify({ name: sanitizedName }),
   })
   if (!response.ok) {
     const msg = await response.text().catch(() => response.statusText)
     throw new Error(msg)
   }
-  const data = await response.json()
-  return { path: data.path, name: sanitizedName, gitInitialized: data.gitInitialized as boolean }
+
+  const data: unknown = await response.json()
+  if (!data || typeof data !== "object") throw new Error("Invalid response")
+
+  const path = "path" in data ? data.path : undefined
+  const name = "name" in data ? data.name : undefined
+  const gitInitialized = "gitInitialized" in data ? data.gitInitialized : undefined
+
+  if (typeof path !== "string") throw new Error("Invalid response: path")
+  if (typeof name !== "string") throw new Error("Invalid response: name")
+  if (typeof gitInitialized !== "boolean") throw new Error("Invalid response: gitInitialized")
+  return { path, name, gitInitialized }
 }
 
 export function DialogOpenProject(props: DialogOpenProjectProps) {
@@ -109,7 +120,14 @@ export function DialogOpenProject(props: DialogOpenProjectProps) {
     setCreating(true)
     setError(null)
 
-    createProject(sdk, name)
+    const auth = (() => {
+      const http = server.current?.http
+      if (!http?.password) return
+      const user = http.username ?? "opencode"
+      return { Authorization: `Basic ${btoa(`${user}:${http.password}`)}` }
+    })()
+
+    createProject(sdk, name, auth)
       .then((result) => {
         if (!result) {
           setError(language.t("dialog.scriptProject.createError"))
