@@ -44,7 +44,10 @@ export default function Home() {
     navigate(`/${base64Encode(directory)}`)
   }
 
-  const creativeFittingUI = createMemo(() => sync.data.config["enable-creative-fitting-ui"] === true)
+  const creativeFittingUI = createMemo(() => {
+    const cfg = sync.data.config as { "creative-fitting"?: { enabled?: boolean } }
+    return cfg["creative-fitting"]?.enabled === true
+  })
 
   async function chooseProject() {
     function resolve(result: string | string[] | null) {

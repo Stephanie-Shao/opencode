@@ -71,6 +71,8 @@ import type {
   PermissionRespondErrors,
   PermissionRespondResponses,
   PermissionRuleset,
+  ProjectCreateErrors,
+  ProjectCreateResponses,
   ProjectCurrentResponses,
   ProjectDiscoverResponses,
   ProjectListResponses,
@@ -360,9 +362,44 @@ export class Auth extends HeyApiClient {
 
 export class Project extends HeyApiClient {
   /**
+   * Create project
+   *
+   * Create a new project directory under the creative-fitting project root and initialize git when possible.
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      name?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "name" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<ProjectCreateResponses, ProjectCreateErrors, ThrowOnError>({
+      url: "/project/create",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
    * Discover git projects
    *
-   * List top-level directories in the current workspace that have git initialized.
+   * List top-level directories in the creative-fitting project root that have git initialized. Defaults to $HOME.
    */
   public discover<ThrowOnError extends boolean = false>(
     parameters?: {

@@ -1681,9 +1681,18 @@ export type Config = {
    */
   theme?: string
   /**
-   * Enable the creative-fitting open project UI in the web app
+   * Creative Fitting configuration
    */
-  "enable-creative-fitting-ui"?: boolean
+  "creative-fitting"?: {
+    /**
+     * Enable the Creative Fitting UI in the web app
+     */
+    enabled?: boolean
+    /**
+     * Filesystem path to the Creative Fitting project root (defaults to $HOME)
+     */
+    root?: string
+  }
   keybinds?: KeybindsConfig
   logLevel?: LogLevel
   /**
@@ -2397,6 +2406,61 @@ export type AuthSetResponses = {
 }
 
 export type AuthSetResponse = AuthSetResponses[keyof AuthSetResponses]
+
+export type ProjectCreateData = {
+  body?: {
+    name: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/project/create"
+}
+
+export type ProjectCreateErrors = {
+  /**
+   * Bad request
+   */
+  400:
+    | {
+        error: string
+      }
+    | {
+        data: unknown
+        errors: Array<{
+          [key: string]: unknown
+        }>
+        success: false
+      }
+  /**
+   * Forbidden
+   */
+  403: {
+    error: string
+  }
+  /**
+   * Project already exists
+   */
+  409: {
+    error: string
+  }
+}
+
+export type ProjectCreateError = ProjectCreateErrors[keyof ProjectCreateErrors]
+
+export type ProjectCreateResponses = {
+  /**
+   * Project created
+   */
+  200: {
+    path: string
+    name: string
+    gitInitialized: boolean
+  }
+}
+
+export type ProjectCreateResponse = ProjectCreateResponses[keyof ProjectCreateResponses]
 
 export type ProjectDiscoverData = {
   body?: never
