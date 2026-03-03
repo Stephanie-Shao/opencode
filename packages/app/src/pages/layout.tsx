@@ -1196,7 +1196,10 @@ export default function Layout(props: ParentProps) {
     }
   }
 
-  const creativeFittingUI = createMemo(() => globalSync.data.config["enable-creative-fitting-ui"] === true)
+  const creativeFittingUI = createMemo(() => {
+    const cfg = globalSync.data.config as { "creative-fitting"?: { enabled?: boolean } }
+    return cfg["creative-fitting"]?.enabled === true
+  })
 
   async function openProjectDialog() {
     if (!creativeFittingUI()) {

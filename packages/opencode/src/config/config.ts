@@ -1008,10 +1008,17 @@ export namespace Config {
     .object({
       $schema: z.string().optional().describe("JSON schema reference for configuration validation"),
       theme: z.string().optional().describe("Theme name to use for the interface"),
-      "enable-creative-fitting-ui": z
-        .boolean()
+      "creative-fitting": z
+        .object({
+          enabled: z.boolean().optional().describe("Enable the Creative Fitting UI in the web app"),
+          root: z
+            .string()
+            .optional()
+            .describe("Filesystem path to the Creative Fitting project root (defaults to $HOME)"),
+        })
+        .strict()
         .optional()
-        .describe("Enable the creative-fitting open project UI in the web app"),
+        .describe("Creative Fitting configuration"),
       keybinds: Keybinds.optional().describe("Custom keybind configurations"),
       logLevel: Log.Level.optional().describe("Log level"),
       tui: TUI.optional().describe("TUI specific settings"),
