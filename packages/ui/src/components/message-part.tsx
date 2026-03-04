@@ -1141,7 +1141,7 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
 
 PART_MAPPING["reasoning"] = function ReasoningPartDisplay(props) {
   const part = props.part as ReasoningPart
-  const text = () => part.text.trim()
+  const text = () => part.text.replace(/\[REDACTED\]/g, "").trim()
   const throttledText = createThrottledValue(text)
 
   return (
@@ -1797,6 +1797,20 @@ ToolRegistry.register({
           </div>
         </Show>
       </BasicTool>
+    )
+  },
+})
+
+ToolRegistry.register({
+  name: "skill",
+  render(props) {
+    return (
+      <BasicTool
+        {...props}
+        icon="glasses"
+        hideDetails
+        trigger={{ title: "skill", subtitle: (props.input as { name?: string }).name }}
+      />
     )
   },
 })
