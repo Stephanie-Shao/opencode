@@ -9,7 +9,7 @@ import { useLanguage } from "@/context/language"
 import { useNavigate } from "@solidjs/router"
 import { useLayout } from "@/context/layout"
 import { base64Encode } from "@opencode-ai/util/encode"
-import { useServer } from "@/context/server"
+import { ServerConnection, useServer } from "@/context/server"
 import { showToast } from "@opencode-ai/ui/toast"
 
 // 剧本项目类型
@@ -26,13 +26,12 @@ interface DialogOpenProjectProps {
 
 // 获取项目列表
 async function fetchProjects(sdk: ReturnType<typeof useGlobalSDK>): Promise<ScriptProject[]> {
-  const response = await sdk.client.file.list({ path: "" })
+  const response = await sdk.client.project.discover()
   return (response.data || [])
-    .filter((node) => node.type === "directory")
-    .map((node) => ({
-      name: node.name,
-      path: node.absolute,
-      updatedAt: (node as any).updatedAt || (node as any).mtime || Date.now(),
+    .map((p) => ({
+      name: p.name,
+      path: p.path,
+      updatedAt: p.updatedAt,
     }))
     .sort((a, b) => b.updatedAt - a.updatedAt)
 }
@@ -40,22 +39,50 @@ async function fetchProjects(sdk: ReturnType<typeof useGlobalSDK>): Promise<Scri
 // 创建新项目目录
 async function createProject(
   sdk: ReturnType<typeof useGlobalSDK>,
+  conn: ServerConnection.HttpBase | undefined,
+  directory: string | undefined,
   projectName: string,
 ): Promise<{ path: string; name: string; gitInitialized: boolean } | null> {
   const sanitizedName = projectName.replace(/[<>:"\\|?*]/g, "").trim()
   if (!sanitizedName) return null
 
-  const response = await fetch(`${sdk.url}/file/mkdir`, {
+  const url = new URL("/project/create", sdk.url)
+  if (directory) url.searchParams.set("directory", directory)
+  const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: sanitizedName }),
+    headers: {
+      "Content-Type": "application/json",
+      ...(conn?.password
+        ? {
+            Authorization: `Basic ${btoa(`${conn.username ?? "opencode"}:${conn.password}`)}`,
+          }
+        : {}),
+    },
+    body: JSON.stringify({ name: sanitizedName }),
   })
   if (!response.ok) {
-    const msg = await response.text().catch(() => response.statusText)
-    throw new Error(msg)
+    const msg = await response
+      .json()
+      .then((x: unknown) => {
+        if (!x || typeof x !== "object") return
+        if (!("error" in x)) return
+        if (typeof x.error !== "string") return
+        return x.error
+      })
+      .catch(async () => response.text().catch(() => response.statusText))
+    throw new Error(typeof msg === "string" ? msg : response.statusText)
   }
-  const data = await response.json()
-  return { path: data.path, name: sanitizedName, gitInitialized: data.gitInitialized as boolean }
+
+  const data: unknown = await response.json()
+  if (!data || typeof data !== "object") throw new Error("Invalid response")
+
+  const path = "path" in data ? data.path : undefined
+  const name = "name" in data ? data.name : undefined
+  const gitInitialized = "gitInitialized" in data ? data.gitInitialized : undefined
+  if (typeof path !== "string") throw new Error("Invalid response: path")
+  if (typeof name !== "string") throw new Error("Invalid response: name")
+  if (typeof gitInitialized !== "boolean") throw new Error("Invalid response: gitInitialized")
+  return { path, name, gitInitialized }
 }
 
 export function DialogOpenProject(props: DialogOpenProjectProps) {
@@ -67,8 +94,8 @@ export function DialogOpenProject(props: DialogOpenProjectProps) {
   const layout = useLayout()
   const server = useServer()
 
-  // 工作区路径来自服务器报告的当前项目目录
-  const workspacePath = createMemo(() => sync.data.path.directory)
+  // discover() now lists projects from the user's home directory
+  const workspacePath = createMemo(() => sync.data.path.home || sync.data.path.directory || "")
 
   const [projects, setProjects] = createSignal<ScriptProject[]>([])
   const [loading, setLoading] = createSignal(false)
@@ -97,11 +124,18 @@ export function DialogOpenProject(props: DialogOpenProjectProps) {
   }
 
   const handleCreateProject = () => {
-    const name = newProjectName().trim()
+    const input = newProjectName().trim()
+    if (!input) {
+      setError(language.t("dialog.scriptProject.nameRequired"))
+      return
+    }
+
+    const name = input.replace(/[<>:"\\|?*]/g, "").trim()
     if (!name) {
       setError(language.t("dialog.scriptProject.nameRequired"))
       return
     }
+
     if (projects().some((p) => p.name.toLowerCase() === name.toLowerCase())) {
       setError(language.t("dialog.scriptProject.nameExists"))
       return
@@ -110,13 +144,15 @@ export function DialogOpenProject(props: DialogOpenProjectProps) {
     setCreating(true)
     setError(null)
 
-    createProject(sdk, name)
+    createProject(sdk, server.current?.http, sync.data.path.directory, name)
       .then((result) => {
         if (!result) {
           setError(language.t("dialog.scriptProject.createError"))
           return
         }
-        setProjects((prev) => [{ name: result.name, path: result.path, updatedAt: Date.now() }, ...prev])
+        if (result.gitInitialized) {
+          setProjects((prev) => [{ name: result.name, path: result.path, updatedAt: Date.now() }, ...prev])
+        }
         if (!result.gitInitialized) {
           showToast({ variant: "error", title: language.t("dialog.scriptProject.gitInitFailed") })
         }

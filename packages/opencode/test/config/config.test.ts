@@ -79,6 +79,26 @@ test("loads JSONC config file", async () => {
   })
 })
 
+test("accepts server.uiUrl and returns it from Config.get", async () => {
+  await using tmp = await tmpdir({
+    init: async (dir) => {
+      await writeConfig(dir, {
+        $schema: "https://opencode.ai/config.json",
+        server: {
+          uiUrl: "https://ui.example.com",
+        },
+      })
+    },
+  })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const config = await Config.get()
+      expect(config.server?.uiUrl).toBe("https://ui.example.com")
+    },
+  })
+})
+
 test("merges multiple config files with correct precedence", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {

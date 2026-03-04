@@ -1,3 +1,24 @@
+[data-component="markdown"][data-markdown-view="file"] {
+  position: relative;
+}
+
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-file-copy"] {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+[data-component="markdown"][data-markdown-view="file"]:hover [data-slot="markdown-file-copy"],
+[data-component="markdown"][data-markdown-view="file"]:focus-within [data-slot="markdown-file-copy"],
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-file-copy"]:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 [data-component="markdown"][data-markdown-view="file"] h1 {
   font-size: var(--font-size-x-large);
   line-height: var(--line-height-large);

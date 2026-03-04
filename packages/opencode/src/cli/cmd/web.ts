@@ -3,6 +3,7 @@ import { UI } from "../ui"
 import { cmd } from "./cmd"
 import { withNetworkOptions, resolveNetworkOptions } from "../network"
 import { Flag } from "../../flag/flag"
+import { Config } from "../../config/config"
 import open from "open"
 import { networkInterfaces } from "os"
 
@@ -31,10 +32,15 @@ function getNetworkIPs() {
 export const WebCommand = cmd({
   command: "web",
   builder: (yargs) =>
-    withNetworkOptions(yargs).option("ui-dir", {
-      type: "string",
-      describe: "serve web UI assets from local directory (fully local web UI)",
-    }),
+    withNetworkOptions(yargs)
+      .option("ui-dir", {
+        type: "string",
+        describe: "serve web UI assets from local directory (fully local web UI)",
+      })
+      .option("ui-url", {
+        type: "string",
+        describe: "override web UI upstream origin (http(s)://host[:port])",
+      }),
   describe: "start opencode server and open web interface",
   handler: async (args) => {
     if (!Flag.OPENCODE_SERVER_PASSWORD) {
@@ -42,7 +48,13 @@ export const WebCommand = cmd({
     }
     const opts = await resolveNetworkOptions(args)
     const uiDir = (args as unknown as { "ui-dir"?: string })["ui-dir"]
-    const server = Server.listen({ ...opts, uiDir })
+    const flagUiUrl = (args as unknown as { "ui-url"?: string })["ui-url"]
+    const uiUrl = flagUiUrl !== undefined ? flagUiUrl : (await Config.global())?.server?.uiUrl
+    const server = Server.listen({
+      ...opts,
+      uiDir,
+      uiUrl,
+    })
     UI.empty()
     UI.println(UI.logo("  "))
     UI.empty()

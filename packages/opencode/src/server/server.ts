@@ -52,11 +52,60 @@ export namespace Server {
   let _corsWhitelist: string[] = []
   let _uiDir: string | undefined
 
+  type UiUpstream = {
+    base: string
+    host: string
+  }
+
+  const defaultUiUpstream: UiUpstream = {
+    base: "https://app.opencode.ai",
+    host: "app.opencode.ai",
+  }
+
+  let _uiUpstream: UiUpstream | undefined
+
   const csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; media-src 'self' data:; connect-src 'self' data:"
 
   export function url(): URL {
     return _url ?? new URL("http://localhost:4096")
+  }
+
+  export function configureUI(input: { uiDir?: string; uiUrl?: string }) {
+    if ("uiDir" in input) {
+      _uiDir = input.uiDir
+    }
+
+    if ("uiUrl" in input) {
+      if (input.uiUrl === undefined) {
+        _uiUpstream = undefined
+        return
+      }
+
+      if (!URL.canParse(input.uiUrl)) {
+        throw new Error("Invalid uiUrl")
+      }
+
+      const url = new URL(input.uiUrl)
+
+      if (url.protocol !== "http:" && url.protocol !== "https:") {
+        throw new Error("Invalid uiUrl")
+      }
+
+      if (url.username || url.password) {
+        throw new Error("Invalid uiUrl")
+      }
+
+      if (url.search || url.hash) {
+        throw new Error("Invalid uiUrl")
+      }
+
+      if (url.pathname !== "/") {
+        throw new Error("Invalid uiUrl")
+      }
+
+      _uiUpstream = { base: url.origin, host: url.host }
+    }
   }
 
   const app = new Hono()
@@ -581,11 +630,13 @@ export namespace Server {
 
           const reqPath = c.req.path
 
-          const response = await proxy(`https://app.opencode.ai${reqPath}`, {
+          const upstream = _uiUpstream ?? defaultUiUpstream
+
+          const response = await proxy(`${upstream.base}${reqPath}`, {
             ...c.req,
             headers: {
-              ...c.req.raw.headers,
-              host: "app.opencode.ai",
+              ...Object.fromEntries(c.req.raw.headers),
+              host: upstream.host,
             },
           })
           response.headers.set("Content-Security-Policy", csp)
@@ -615,7 +666,14 @@ export namespace Server {
     mdnsDomain?: string
     cors?: string[]
     uiDir?: string
+    uiUrl?: string
   }) {
+    if (opts.uiDir !== undefined) {
+      Server.configureUI({ uiUrl: undefined })
+    } else {
+      Server.configureUI({ uiUrl: opts.uiUrl })
+    }
+
     _corsWhitelist = opts.cors ?? []
     _uiDir = opts.uiDir
 

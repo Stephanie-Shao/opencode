@@ -255,6 +255,189 @@
         ]
       }
     },
+    "/project/create": {
+      "post": {
+        "operationId": "project.create",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Create project",
+        "description": "Create a new project directory under the creative-fitting project root and initialize git when possible.",
+        "responses": {
+          "200": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "gitInitialized": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": ["path", "name", "gitInitialized"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["error"]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {},
+                        "errors": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          }
+                        },
+                        "success": {
+                          "type": "boolean",
+                          "const": false
+                        }
+                      },
+                      "required": ["data", "errors", "success"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Project already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": ["name"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.project.create({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/project/discover": {
+      "get": {
+        "operationId": "project.discover",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Discover git projects",
+        "description": "List top-level directories in the creative-fitting project root that have git initialized. Defaults to $HOME.",
+        "responses": {
+          "200": {
+            "description": "Discovered projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "path": {
+                        "type": "string"
+                      },
+                      "updatedAt": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["name", "path", "updatedAt"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.project.discover({\n  ...\n})"
+          }
+        ]
+      }
+    },
     "/project": {
       "get": {
         "operationId": "project.list",
@@ -4255,6 +4438,61 @@
           {
             "lang": "js",
             "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.find.symbols({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/file/mkdir": {
+      "post": {
+        "operationId": "file.mkdir",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Create directory",
+        "description": "Create a new directory at the specified path.",
+        "responses": {
+          "200": {
+            "description": "Directory created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["path"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                },
+                "required": ["path"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createOpencodeClient } from \"@opencode-ai/sdk\n\nconst client = createOpencodeClient()\nawait client.file.mkdir({\n  ...\n})"
           }
         ]
       }
@@ -9075,6 +9313,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "uiUrl": {
+            "description": "Proxy web UI assets from this upstream URL",
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -9624,6 +9866,21 @@
           "theme": {
             "description": "Theme name to use for the interface",
             "type": "string"
+          },
+          "creative-fitting": {
+            "description": "Creative Fitting configuration",
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "description": "Enable the Creative Fitting UI in the web app",
+                "type": "boolean"
+              },
+              "root": {
+                "description": "Filesystem path to the Creative Fitting project root (defaults to $HOME)",
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
           },
           "keybinds": {
             "$ref": "#/components/schemas/KeybindsConfig"

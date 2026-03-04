@@ -939,6 +939,7 @@ export namespace Config {
       mdns: z.boolean().optional().describe("Enable mDNS service discovery"),
       mdnsDomain: z.string().optional().describe("Custom domain name for mDNS service (default: opencode.local)"),
       cors: z.array(z.string()).optional().describe("Additional domains to allow for CORS"),
+      uiUrl: z.string().optional().describe("Proxy web UI assets from this upstream URL"),
     })
     .strict()
     .meta({
@@ -1007,6 +1008,17 @@ export namespace Config {
     .object({
       $schema: z.string().optional().describe("JSON schema reference for configuration validation"),
       theme: z.string().optional().describe("Theme name to use for the interface"),
+      "creative-fitting": z
+        .object({
+          enabled: z.boolean().optional().describe("Enable the Creative Fitting UI in the web app"),
+          root: z
+            .string()
+            .optional()
+            .describe("Filesystem path to the Creative Fitting project root (defaults to $HOME)"),
+        })
+        .strict()
+        .optional()
+        .describe("Creative Fitting configuration"),
       keybinds: Keybinds.optional().describe("Custom keybind configurations"),
       logLevel: Log.Level.optional().describe("Log level"),
       tui: TUI.optional().describe("TUI specific settings"),

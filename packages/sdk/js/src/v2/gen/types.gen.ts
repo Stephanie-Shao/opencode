@@ -1402,6 +1402,10 @@ export type ServerConfig = {
    * Additional domains to allow for CORS
    */
   cors?: Array<string>
+  /**
+   * Proxy web UI assets from this upstream URL
+   */
+  uiUrl?: string
 }
 
 export type PermissionActionConfig = "ask" | "allow" | "deny"
@@ -1676,6 +1680,19 @@ export type Config = {
    * Theme name to use for the interface
    */
   theme?: string
+  /**
+   * Creative Fitting configuration
+   */
+  "creative-fitting"?: {
+    /**
+     * Enable the Creative Fitting UI in the web app
+     */
+    enabled?: boolean
+    /**
+     * Filesystem path to the Creative Fitting project root (defaults to $HOME)
+     */
+    root?: string
+  }
   keybinds?: KeybindsConfig
   logLevel?: LogLevel
   /**
@@ -2389,6 +2406,83 @@ export type AuthSetResponses = {
 }
 
 export type AuthSetResponse = AuthSetResponses[keyof AuthSetResponses]
+
+export type ProjectCreateData = {
+  body?: {
+    name: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/project/create"
+}
+
+export type ProjectCreateErrors = {
+  /**
+   * Bad request
+   */
+  400:
+    | {
+        error: string
+      }
+    | {
+        data: unknown
+        errors: Array<{
+          [key: string]: unknown
+        }>
+        success: false
+      }
+  /**
+   * Forbidden
+   */
+  403: {
+    error: string
+  }
+  /**
+   * Project already exists
+   */
+  409: {
+    error: string
+  }
+}
+
+export type ProjectCreateError = ProjectCreateErrors[keyof ProjectCreateErrors]
+
+export type ProjectCreateResponses = {
+  /**
+   * Project created
+   */
+  200: {
+    path: string
+    name: string
+    gitInitialized: boolean
+  }
+}
+
+export type ProjectCreateResponse = ProjectCreateResponses[keyof ProjectCreateResponses]
+
+export type ProjectDiscoverData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/project/discover"
+}
+
+export type ProjectDiscoverResponses = {
+  /**
+   * Discovered projects
+   */
+  200: Array<{
+    name: string
+    path: string
+    updatedAt: number
+  }>
+}
+
+export type ProjectDiscoverResponse = ProjectDiscoverResponses[keyof ProjectDiscoverResponses]
 
 export type ProjectListData = {
   body?: never
@@ -4268,6 +4362,28 @@ export type FindSymbolsResponses = {
 }
 
 export type FindSymbolsResponse = FindSymbolsResponses[keyof FindSymbolsResponses]
+
+export type FileMkdirData = {
+  body?: {
+    path: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/file/mkdir"
+}
+
+export type FileMkdirResponses = {
+  /**
+   * Directory created
+   */
+  200: {
+    path: string
+  }
+}
+
+export type FileMkdirResponse = FileMkdirResponses[keyof FileMkdirResponses]
 
 export type FileListData = {
   body?: never

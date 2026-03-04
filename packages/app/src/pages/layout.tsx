@@ -925,7 +925,7 @@ export default function Layout(props: ParentProps) {
         title: language.t("command.project.open"),
         category: language.t("command.category.project"),
         keybind: "mod+o",
-        onSelect: () => chooseProject(),
+        onSelect: () => void openProjectDialog(),
       },
       {
         id: "provider.connect",
@@ -1196,7 +1196,17 @@ export default function Layout(props: ParentProps) {
     }
   }
 
-  function openScriptProjectDialog() {
+  const creativeFittingUI = createMemo(() => {
+    const cfg = globalSync.data.config as { "creative-fitting"?: { enabled?: boolean } }
+    return cfg["creative-fitting"]?.enabled === true
+  })
+
+  async function openProjectDialog() {
+    if (!creativeFittingUI()) {
+      await chooseProject()
+      return
+    }
+
     dialog.show(
       () => <DialogOpenProject onSelect={(path) => openProject(path)} />,
       () => {},
@@ -1968,7 +1978,7 @@ export default function Layout(props: ParentProps) {
               handleDragOver={handleDragOver}
               openProjectLabel={language.t("command.project.open")}
               openProjectKeybind={() => command.keybind("project.open")}
-              onOpenProject={openScriptProjectDialog}
+              onOpenProject={() => void openProjectDialog()}
               renderProjectOverlay={() => (
                 <ProjectDragOverlay projects={() => layout.projects.list()} activeProject={() => store.activeProject} />
               )}
@@ -2033,7 +2043,7 @@ export default function Layout(props: ParentProps) {
               handleDragOver={handleDragOver}
               openProjectLabel={language.t("command.project.open")}
               openProjectKeybind={() => command.keybind("project.open")}
-              onOpenProject={openScriptProjectDialog}
+              onOpenProject={() => void openProjectDialog()}
               renderProjectOverlay={() => (
                 <ProjectDragOverlay projects={() => layout.projects.list()} activeProject={() => store.activeProject} />
               )}

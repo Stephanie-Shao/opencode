@@ -8,10 +8,12 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { DateTime } from "luxon"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { DialogSelectServer } from "@/components/dialog-select-server"
+import { DialogSelectDirectory } from "@/components/dialog-select-directory"
 import { DialogOpenProject } from "@/components/dialog-open-project"
 import { useServer } from "@/context/server"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
+import { usePlatform } from "@/context/platform"
 
 export default function Home() {
   const sync = useGlobalSync()
@@ -20,6 +22,7 @@ export default function Home() {
   const navigate = useNavigate()
   const server = useServer()
   const language = useLanguage()
+  const platform = usePlatform()
   const homedir = createMemo(() => sync.data.path.home)
   const recent = createMemo(() => {
     return sync.data.project
@@ -41,7 +44,46 @@ export default function Home() {
     navigate(`/${base64Encode(directory)}`)
   }
 
-  function openScriptProjectDialog() {
+  const creativeFittingUI = createMemo(() => {
+    const cfg = sync.data.config as { "creative-fitting"?: { enabled?: boolean } }
+    return cfg["creative-fitting"]?.enabled === true
+  })
+
+  async function chooseProject() {
+    function resolve(result: string | string[] | null) {
+      if (Array.isArray(result)) {
+        for (const directory of result) {
+          layout.projects.open(directory)
+          server.projects.touch(directory)
+        }
+        if (result[0]) navigate(`/${base64Encode(result[0])}`)
+        return
+      }
+
+      if (result) openProject(result)
+    }
+
+    if (platform.openDirectoryPickerDialog && server.isLocal()) {
+      const result = await platform.openDirectoryPickerDialog?.({
+        title: language.t("command.project.open"),
+        multiple: true,
+      })
+      resolve(result)
+      return
+    }
+
+    dialog.show(
+      () => <DialogSelectDirectory multiple={true} onSelect={resolve} />,
+      () => resolve(null),
+    )
+  }
+
+  async function openProjectDialog() {
+    if (!creativeFittingUI()) {
+      await chooseProject()
+      return
+    }
+
     dialog.show(
       () => <DialogOpenProject onSelect={(path) => openProject(path)} />,
       () => {},
@@ -71,7 +113,7 @@ export default function Home() {
             <div class="flex gap-2 items-center justify-between pl-3">
               <div class="text-14-medium text-text-strong">{language.t("home.recentProjects")}</div>
               <div class="flex gap-2">
-                <Button icon="folder-add-left" size="normal" class="pl-2 pr-3" onClick={openScriptProjectDialog}>
+                <Button icon="folder-add-left" size="normal" class="pl-2 pr-3" onClick={() => void openProjectDialog()}>
                   {language.t("command.project.open")}
                 </Button>
               </div>
@@ -103,7 +145,7 @@ export default function Home() {
               <div class="text-12-regular text-text-weak">{language.t("home.empty.description")}</div>
             </div>
             <div class="flex gap-2 mt-1">
-              <Button icon="folder-add-left" class="px-3" onClick={openScriptProjectDialog}>
+              <Button icon="folder-add-left" class="px-3" onClick={() => void openProjectDialog()}>
                 {language.t("command.project.open")}
               </Button>
             </div>

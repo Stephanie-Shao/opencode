@@ -20,7 +20,10 @@ describe("POST /file/mkdir git init", () => {
         expect(result.exitCode).toBe(0)
 
         const gitDir = path.join(newDir, ".git")
-        const exists = await fs.stat(gitDir).then(() => true).catch(() => false)
+        const exists = await fs
+          .stat(gitDir)
+          .then(() => true)
+          .catch(() => false)
         expect(exists).toBe(true)
       },
     })
@@ -42,7 +45,10 @@ describe("POST /file/mkdir git init", () => {
 
         // .git 目录不应存在
         const gitDir = path.join(newDir, ".git")
-        const exists = await fs.stat(gitDir).then(() => true).catch(() => false)
+        const exists = await fs
+          .stat(gitDir)
+          .then(() => true)
+          .catch(() => false)
         expect(exists).toBe(false)
       },
     })
@@ -61,7 +67,10 @@ describe("POST /file/mkdir git init", () => {
         // 即使 git init 失败，目录本身应已存在
         await git(["init", "--invalid-flag"], { cwd: newDir })
 
-        const dirExists = await fs.stat(newDir).then(() => true).catch(() => false)
+        const dirExists = await fs
+          .stat(newDir)
+          .then(() => true)
+          .catch(() => false)
         expect(dirExists).toBe(true)
       },
     })

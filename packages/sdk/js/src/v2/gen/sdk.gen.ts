@@ -26,6 +26,7 @@ import type {
   EventTuiToastShow,
   ExperimentalResourceListResponses,
   FileListResponses,
+  FileMkdirResponses,
   FilePartInput,
   FilePartSource,
   FileReadResponses,
@@ -70,7 +71,10 @@ import type {
   PermissionRespondErrors,
   PermissionRespondResponses,
   PermissionRuleset,
+  ProjectCreateErrors,
+  ProjectCreateResponses,
   ProjectCurrentResponses,
+  ProjectDiscoverResponses,
   ProjectListResponses,
   ProjectUpdateErrors,
   ProjectUpdateResponses,
@@ -357,6 +361,60 @@ export class Auth extends HeyApiClient {
 }
 
 export class Project extends HeyApiClient {
+  /**
+   * Create project
+   *
+   * Create a new project directory under the creative-fitting project root and initialize git when possible.
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      name?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "name" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<ProjectCreateResponses, ProjectCreateErrors, ThrowOnError>({
+      url: "/project/create",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Discover git projects
+   *
+   * List top-level directories in the creative-fitting project root that have git initialized. Defaults to $HOME.
+   */
+  public discover<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<ProjectDiscoverResponses, unknown, ThrowOnError>({
+      url: "/project/discover",
+      ...options,
+      ...params,
+    })
+  }
+
   /**
    * List all projects
    *
@@ -2265,6 +2323,41 @@ export class Find extends HeyApiClient {
 }
 
 export class File extends HeyApiClient {
+  /**
+   * Create directory
+   *
+   * Create a new directory at the specified path.
+   */
+  public mkdir<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+      path?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ) {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<FileMkdirResponses, unknown, ThrowOnError>({
+      url: "/file/mkdir",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
   /**
    * List files
    *
