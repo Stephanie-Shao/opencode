@@ -1141,7 +1141,7 @@ PART_MAPPING["text"] = function TextPartDisplay(props) {
 
 PART_MAPPING["reasoning"] = function ReasoningPartDisplay(props) {
   const part = props.part as ReasoningPart
-  const text = () => part.text.replace(/\[REDACTED\]/g, "").trim()
+  const text = () => part.text.trim()
   const throttledText = createThrottledValue(text)
 
   return (
