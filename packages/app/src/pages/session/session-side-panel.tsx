@@ -96,14 +96,36 @@ export function SessionSidePanel(props: {
     if (!view().reviewPanel.opened()) view().reviewPanel.open()
   }
 
+  // 标志位：当通过 openTab 主动打开新 tab 时，忽略 Kobalte onChange 的 fallback 回调
+  let suppressOnChange = false
+
   const openTab = (value: string) => {
     const next = normalizeTab(value)
+
+    // 判断是否是新 tab（还不在 all 里），若是则抑制 onChange
+    const isNew = !tabs().all().includes(next)
+    if (isNew) suppressOnChange = true
+
     tabs().open(next)
 
     const path = file.pathFromTab(next)
-    if (!path) return
+    if (!path) {
+      suppressOnChange = false
+      return
+    }
     file.load(path)
     openReviewPanel()
+
+    // 用 requestAnimationFrame 确保 Kobalte collection 更新后再解除抑制
+    requestAnimationFrame(() => {
+      suppressOnChange = false
+    })
+  }
+
+  // 只有用户手动点击 tab 时才调用 openTab（过滤掉 Kobalte fallback 触发的 onChange）
+  const handleTabChange = (value: string) => {
+    if (suppressOnChange) return
+    openTab(value)
   }
 
   const contextOpen = createMemo(() => tabs().active() === "context" || tabs().all().includes("context"))
@@ -214,7 +236,7 @@ export function SessionSidePanel(props: {
                 >
                   <DragDropSensors />
                   <ConstrainDragYAxis />
-                  <Tabs value={activeTab()} onChange={openTab}>
+                  <Tabs value={activeTab()} onChange={handleTabChange}>
                     <div class="sticky top-0 shrink-0 flex">
                       <Tabs.List
                         ref={(el: HTMLDivElement) => {

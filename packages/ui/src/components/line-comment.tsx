@@ -1,4 +1,4 @@
-import { onMount, Show, splitProps, type JSX } from "solid-js"
+import { createSignal, onMount, Show, splitProps, type JSX } from "solid-js"
 import { Button } from "./button"
 import { Icon } from "./icon"
 import { useI18n } from "../context/i18n"
@@ -56,24 +56,89 @@ export const LineCommentAnchor = (props: LineCommentAnchorProps) => {
 }
 
 export type LineCommentProps = Omit<LineCommentAnchorProps, "children" | "variant"> & {
-  comment: JSX.Element
+  comment: string
   selection: JSX.Element
+  onSave?: (newComment: string) => void
 }
 
 export const LineComment = (props: LineCommentProps) => {
   const i18n = useI18n()
-  const [split, rest] = splitProps(props, ["comment", "selection"])
+  const [split, rest] = splitProps(props, ["comment", "selection", "onSave"])
+  const [editing, setEditing] = createSignal(false)
+  const [draft, setDraft] = createSignal("")
+
+  const enterEdit = () => {
+    setDraft(typeof split.comment === "string" ? split.comment : "")
+    setEditing(true)
+  }
+
+  const cancelEdit = () => {
+    setEditing(false)
+  }
+
+  const submitEdit = () => {
+    const value = draft().trim()
+    if (!value) return
+    split.onSave?.(value)
+    setEditing(false)
+  }
+
+  let textarea: HTMLTextAreaElement | undefined
 
   return (
     <LineCommentAnchor {...rest} variant="default">
-      <div data-slot="line-comment-content">
-        <div data-slot="line-comment-text">{split.comment}</div>
-        <div data-slot="line-comment-label">
-          {i18n.t("ui.lineComment.label.prefix")}
-          {split.selection}
-          {i18n.t("ui.lineComment.label.suffix")}
+      <Show
+        when={editing()}
+        fallback={
+          <div data-slot="line-comment-content">
+            <div data-slot="line-comment-text">{split.comment}</div>
+            <div data-slot="line-comment-label">
+              {i18n.t("ui.lineComment.label.prefix")}
+              {split.selection}
+              {i18n.t("ui.lineComment.label.suffix")}
+            </div>
+            <Show when={split.onSave}>
+              <button
+                type="button"
+                data-slot="line-comment-edit-button"
+                onClick={(e) => { e.stopPropagation(); enterEdit() }}
+                aria-label="Edit comment"
+              >
+                <Icon name="edit" size="small" />
+              </button>
+            </Show>
+          </div>
+        }
+      >
+        <div data-slot="line-comment-editor">
+          <textarea
+            ref={(el) => {
+              textarea = el
+              requestAnimationFrame(() => el?.focus())
+            }}
+            data-slot="line-comment-textarea"
+            rows={3}
+            value={draft()}
+            onInput={(e) => setDraft(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") { e.preventDefault(); cancelEdit(); return }
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitEdit() }
+            }}
+          />
+          <div data-slot="line-comment-actions">
+            <div data-slot="line-comment-editor-label">
+              {i18n.t("ui.lineComment.editorLabel.prefix")}
+              {split.selection}
+            </div>
+            <Button size="small" variant="ghost" onClick={cancelEdit}>
+              {i18n.t("ui.common.cancel")}
+            </Button>
+            <Button size="small" variant="primary" disabled={draft().trim().length === 0} onClick={submitEdit}>
+              {i18n.t("ui.lineComment.submit")}
+            </Button>
+          </div>
         </div>
-      </div>
+      </Show>
     </LineCommentAnchor>
   )
 }
