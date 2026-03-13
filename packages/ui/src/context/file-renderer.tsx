@@ -6,6 +6,8 @@ import { useCodeComponent } from "./code"
 export type LineRange = {
   start: number
   end: number
+  startCol?: number
+  endCol?: number
 }
 
 export type FileMeta = {
@@ -23,12 +25,15 @@ export type FileContents = {
   cacheKey?: string
 }
 
+export type FileRenderMode = "preview" | "edit"
+
 export type FileRenderProps = {
   meta: FileMeta
   file: FileContents
   overflow?: string
   class?: string
   classList?: Record<string, boolean>
+  mode?: FileRenderMode
 
   enableLineSelection?: boolean
   selectedLines?: LineRange | null

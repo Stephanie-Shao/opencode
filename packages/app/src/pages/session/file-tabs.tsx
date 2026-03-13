@@ -19,7 +19,12 @@ import { getSessionHandoff } from "@/pages/session/handoff"
 const formatCommentLabel = (range: SelectedLineRange) => {
   const start = Math.min(range.start, range.end)
   const end = Math.max(range.start, range.end)
-  if (start === end) return `line ${start}`
+  if (start === end) {
+    if (range.startCol !== undefined && range.endCol !== undefined) {
+      return `line ${start}, col ${range.startCol}–${range.endCol}`
+    }
+    return `line ${start}`
+  }
   return `lines ${start}-${end}`
 }
 
@@ -514,6 +519,12 @@ export function FileTabContent(props: { tab: string }) {
               setNote("openedComment", (current) => (current === comment.id ? null : comment.id))
               file.setSelectedLines(p, comment.selection)
             }}
+            onSave={(newComment) => {
+              const p = path()
+              if (!p) return
+              comments.update(p, comment.id, newComment)
+              prompt.context.updateComment(comment.id, newComment)
+            }}
           />
         )}
       </For>
@@ -524,6 +535,7 @@ export function FileTabContent(props: { tab: string }) {
               top={note.draftTop}
               value={note.draft}
               selection={formatCommentLabel(range())}
+              autofocus={false}
               onInput={(value) => setNote("draft", value)}
               onCancel={() => setNote("commenting", null)}
               onSubmit={(value) => {
@@ -531,6 +543,8 @@ export function FileTabContent(props: { tab: string }) {
                 if (!p) return
                 addCommentToContext({ file: p, selection: range(), comment: value, origin: "file" })
                 setNote("commenting", null)
+                // 提交后在下一帧关闭气泡，避免 focus effect 自动展开遮挡文档
+                requestAnimationFrame(() => setNote("openedComment", null))
               }}
               onPopoverFocusOut={(e: FocusEvent) => {
                 const current = e.currentTarget as HTMLDivElement
