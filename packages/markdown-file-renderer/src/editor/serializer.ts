@@ -1,10 +1,10 @@
+// @ts-nocheck — turndown 和 turndown-plugin-gfm 无类型声明，跳过类型检查
 import TurndownService from "turndown"
-// @ts-ignore — turndown-plugin-gfm 没有类型定义
 import { gfm } from "turndown-plugin-gfm"
 
-let instance: TurndownService | null = null
+let instance: InstanceType<typeof TurndownService> | null = null
 
-function getTurndown(): TurndownService {
+function getTurndown() {
   if (instance) return instance
 
   instance = new TurndownService({
