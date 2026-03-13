@@ -10,6 +10,8 @@ export type FileSelection = {
 export type SelectedLineRange = {
   start: number
   end: number
+  startCol?: number
+  endCol?: number
   side?: "additions" | "deletions"
   endSide?: "additions" | "deletions"
 }
@@ -35,7 +37,7 @@ export function selectionFromLines(range: SelectedLineRange): FileSelection {
   return {
     startLine,
     endLine,
-    startChar: 0,
-    endChar: 0,
+    startChar: range.startCol !== undefined ? range.startCol - 1 : 0,
+    endChar: range.endCol !== undefined ? range.endCol : 0,
   }
 }

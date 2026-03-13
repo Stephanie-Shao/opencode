@@ -2,40 +2,201 @@
   position: relative;
 }
 
-[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-file-copy"] {
+/* ─── Toolbar (copy button) ─── */
+
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-file-toolbar"] {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 120ms ease;
 }
 
-[data-component="markdown"][data-markdown-view="file"]:hover [data-slot="markdown-file-copy"],
-[data-component="markdown"][data-markdown-view="file"]:focus-within [data-slot="markdown-file-copy"],
-[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-file-copy"]:focus-within {
+[data-component="markdown"][data-markdown-view="file"]:hover [data-slot="markdown-file-toolbar"],
+[data-component="markdown"][data-markdown-view="file"]:focus-within [data-slot="markdown-file-toolbar"],
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-file-toolbar"]:focus-within,
+[data-component="markdown"][data-markdown-view="file"][data-mode="edit"] [data-slot="markdown-file-toolbar"],
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-file-copy"][data-copied="true"] {
   opacity: 1;
   pointer-events: auto;
 }
 
+
+/* ─── Edit mode: contentEditable 样式 ─── */
+
+[data-component="markdown"][data-markdown-view="file"][data-mode="edit"] [data-slot="markdown-content"] {
+  outline: none;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 4px;
+  cursor: text;
+}
+
+/* ─── Highlight: 选中区域（字符级，CSS Custom Highlight API）─── */
+
+::highlight(md-selected) {
+  background-color: color-mix(in srgb, #3b82f6 25%, transparent);
+}
+
+/* ─── Highlight: 已评论文字（字符级，CSS Custom Highlight API）─── */
+
+::highlight(md-commented) {
+  background-color: color-mix(in srgb, #3b82f6 15%, transparent);
+}
+
+/* ─── Content area padding ─── */
+
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-content"] {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 32px;
+}
+
+/* ─── Headings ─── */
+
 [data-component="markdown"][data-markdown-view="file"] h1 {
-  font-size: var(--font-size-x-large);
-  line-height: var(--line-height-large);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+[data-component="markdown"][data-markdown-view="file"] h2 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
   margin-top: 2rem;
   margin-bottom: 0.75rem;
 }
 
-[data-component="markdown"][data-markdown-view="file"] h2 {
-  font-size: var(--font-size-large);
-  line-height: var(--line-height-large);
-  margin-top: 1.75rem;
-  margin-bottom: 0.75rem;
-}
-
 [data-component="markdown"][data-markdown-view="file"] h3 {
-  font-size: var(--font-size-base);
-  line-height: var(--line-height-large);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
+}
+
+[data-component="markdown"][data-markdown-view="file"] h4 {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  line-height: 1.4;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ─── First/last child margin reset ─── */
+
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-content"] > *:first-child {
+  margin-top: 0;
+}
+
+[data-component="markdown"][data-markdown-view="file"] [data-slot="markdown-content"] > *:last-child {
+  margin-bottom: 0;
+}
+
+/* ─── Paragraphs ─── */
+
+[data-component="markdown"][data-markdown-view="file"] p {
+  margin-bottom: 1.25rem;
+}
+
+/* ─── Lists ─── */
+
+[data-component="markdown"][data-markdown-view="file"] ul,
+[data-component="markdown"][data-markdown-view="file"] ol {
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-left: 2rem;
+}
+
+[data-component="markdown"][data-markdown-view="file"] li {
+  margin-bottom: 0.5rem;
+}
+
+[data-component="markdown"][data-markdown-view="file"] li > ul,
+[data-component="markdown"][data-markdown-view="file"] li > ol {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  padding-left: 1.5rem;
+}
+
+/* ─── Blockquote ─── */
+
+[data-component="markdown"][data-markdown-view="file"] blockquote {
+  border-left: 3px solid var(--text-weak);
+  margin: 1.5rem 0;
+  padding: 0.5rem 1rem;
+  color: var(--text-weak);
+  background: var(--surface-base, rgba(0, 0, 0, 0.02));
+  border-radius: 0 4px 4px 0;
+}
+
+[data-component="markdown"][data-markdown-view="file"] blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* ─── Code block ─── */
+
+[data-component="markdown"][data-markdown-view="file"] pre {
+  margin: 1.5rem 0;
+  overflow: auto;
+}
+
+[data-component="markdown"][data-markdown-view="file"] pre code {
+  display: block;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: var(--surface-base, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--border-weak-base, rgba(0, 0, 0, 0.07));
+  overflow-x: auto;
+}
+
+/* ─── Table ─── */
+
+[data-component="markdown"][data-markdown-view="file"] table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  display: table;
+}
+
+[data-component="markdown"][data-markdown-view="file"] th {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 16px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-strong);
+  background: var(--surface-base, rgba(0, 0, 0, 0.02));
+  border-bottom: 1px solid var(--border-weak-base, rgba(0, 0, 0, 0.07));
+}
+
+[data-component="markdown"][data-markdown-view="file"] td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-weaker-base, rgba(0, 0, 0, 0.04));
+}
+
+/* ─── Horizontal rule ─── */
+
+[data-component="markdown"][data-markdown-view="file"] hr {
+  border: none;
+  border-top: 1px solid var(--border-weak-base, rgba(0, 0, 0, 0.07));
+  margin: 2.5rem 0;
+}
+
+/* ─── Images ─── */
+
+[data-component="markdown"][data-markdown-view="file"] img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  display: block;
 }
