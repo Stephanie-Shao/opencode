@@ -401,8 +401,6 @@ export function FileTabContent(props: { tab: string }) {
     const meta = { path: filePath }
     const resolved = fileRenderer.resolve(meta)
 
-    console.log("[file-renderer] path:", filePath, "resolved:", resolved.id)
-
     if (resolved.id !== "fallback") {
       return (
         <div class="relative overflow-hidden pb-40">

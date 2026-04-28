@@ -82,12 +82,8 @@ export const { use: useFileRenderer, provider: FileRendererProvider } = createSi
     return {
       resolve(meta) {
         const list = renderers()
-        console.log("[FileRenderer.resolve] meta:", meta, "renderers:", list.map(r => r.id))
         for (const renderer of list) {
-          if (renderer.match(meta)) {
-            console.log("[FileRenderer.resolve] matched:", renderer.id)
-            return renderer
-          }
+          if (renderer.match(meta)) return renderer
         }
         return list[list.length - 1]!
       },
