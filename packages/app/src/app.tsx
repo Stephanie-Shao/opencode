@@ -1,7 +1,9 @@
 import "@/index.css"
+import { markdownRenderer } from "@opencode-ai/markdown-file-renderer"
 import { I18nProvider } from "@opencode-ai/ui/context"
 import { DialogProvider } from "@opencode-ai/ui/context/dialog"
 import { FileComponentProvider } from "@opencode-ai/ui/context/file"
+import { FileRendererProvider } from "@opencode-ai/ui/context/file-renderer"
 import { MarkedProvider } from "@opencode-ai/ui/context/marked"
 import { File } from "@opencode-ai/ui/file"
 import { Font } from "@opencode-ai/ui/font"
@@ -151,7 +153,11 @@ export function AppBaseProviders(props: ParentProps<{ locale?: Locale }>) {
             <ErrorBoundary fallback={(error) => <ErrorPage error={error} />}>
               <DialogProvider>
                 <MarkedProvider>
-                  <FileComponentProvider component={File}>{props.children}</FileComponentProvider>
+                  <FileComponentProvider component={File}>
+                    <FileRendererProvider renderers={[markdownRenderer]}>
+                      {props.children}
+                    </FileRendererProvider>
+                  </FileComponentProvider>
                 </MarkedProvider>
               </DialogProvider>
             </ErrorBoundary>
