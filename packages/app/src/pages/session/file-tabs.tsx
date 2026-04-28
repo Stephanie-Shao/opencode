@@ -492,7 +492,11 @@ export function FileTabContent(props: { tab: string }) {
               commentsUi.onLineSelected(range)
             }}
             onLineSelectionEnd={(range: SelectedLineRange | null) => {
-              commentsUi.onLineSelectionEnd(range)
+              if (!range) {
+                commentsUi.onLineSelectionEnd(range)
+                return
+              }
+              commentsUi.note.openDraft(range)
             }}
             class="select-text"
           />
@@ -521,20 +525,19 @@ export function FileTabContent(props: { tab: string }) {
           </For>
           <Show when={note.commenting}>
             {(range) => (
-              <Show when={mdDraftTop() !== undefined}>
-                <LineCommentEditor
-                  top={mdDraftTop()}
-                  value=""
+              <LineCommentEditor
+                top={mdDraftTop() ?? 0}
+                value={commentsUi.note.draft()}
                   selection={formatCommentLabel(range())}
-                  autofocus={false}
-                  onInput={() => {}}
-                  onCancel={() => setNote("commenting", null)}
+                  autofocus
+                  mention={{ items: file.searchFilesAndDirectories }}
+                  onInput={commentsUi.note.setDraft}
+                  onCancel={() => commentsUi.note.cancelDraft()}
                   onSubmit={(value) => {
                     const p = path()
                     if (!p) return
                     addCommentToContext({ file: p, selection: range(), comment: value, origin: "file" })
-                    setNote("commenting", null)
-                    requestAnimationFrame(() => setNote("openedComment", null))
+                    commentsUi.note.cancelDraft()
                   }}
                   onPopoverFocusOut={(e: FocusEvent) => {
                     const current = e.currentTarget as HTMLDivElement
@@ -542,12 +545,11 @@ export function FileTabContent(props: { tab: string }) {
                     if (target instanceof Node && current.contains(target)) return
                     setTimeout(() => {
                       if (!document.activeElement || !current.contains(document.activeElement)) {
-                        setNote("commenting", null)
+                        commentsUi.note.cancelDraft()
                       }
                     }, 0)
                   }}
                 />
-              </Show>
             )}
           </Show>
         </div>
