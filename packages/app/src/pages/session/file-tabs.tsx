@@ -1,12 +1,13 @@
-import { createEffect, createMemo, createSignal, Match, on, onCleanup, Switch } from "solid-js"
+import { createEffect, createMemo, createSignal, For, Match, on, onCleanup, Show, Switch } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import type { FileSearchHandle } from "@opencode-ai/ui/file"
 import { useFileComponent } from "@opencode-ai/ui/context/file"
-import { useFileRenderer } from "@opencode-ai/ui/context/file-renderer"
+import { useFileRenderer, type CommentSurface } from "@opencode-ai/ui/context/file-renderer"
 import { cloneSelectedLineRange, previewSelectedLines } from "@opencode-ai/ui/pierre/selection-bridge"
 import { createLineCommentController } from "@opencode-ai/ui/line-comment-annotations"
+import { LineComment, LineCommentEditor } from "@opencode-ai/ui/line-comment"
 import { sampledChecksum } from "@opencode-ai/core/util/encode"
 import { DropdownMenu } from "@opencode-ai/ui/dropdown-menu"
 import { IconButton } from "@opencode-ai/ui/icon-button"
@@ -187,6 +188,8 @@ export function FileTabContent(props: { tab: string }) {
   }).activeFileTab
 
   let find: FileSearchHandle | null = null
+  let mdSurface: CommentSurface | null = null
+  let mdWrap: HTMLDivElement | undefined
 
   const search = {
     register: (handle: FileSearchHandle | null) => {
@@ -279,6 +282,50 @@ export function FileTabContent(props: { tab: string }) {
 
   const commentedLines = createMemo(() => fileComments().map((comment) => comment.selection))
 
+  // ─── Markdown comment overlay state ───
+  const [mdCommentPositions, setMdCommentPositions] = createStore<Record<string, number>>({})
+  const [mdDraftTop, setMdDraftTop] = createSignal<number | undefined>(undefined)
+
+  const formatCommentLabel = (range: SelectedLineRange) => {
+    const start = Math.min(range.start, range.end)
+    const end = Math.max(range.start, range.end)
+    if (start === end) return `line ${start}`
+    return `lines ${start}-${end}`
+  }
+
+  const mdMarkerTop = (wrapper: HTMLElement, marker: HTMLElement) => {
+    const wrapperRect = wrapper.getBoundingClientRect()
+    const rect = marker.getBoundingClientRect()
+    return rect.top - wrapperRect.top + Math.max(0, (rect.height - 20) / 2)
+  }
+
+  const updateMdCommentPositions = () => {
+    const el = mdWrap
+    if (!el) {
+      setMdCommentPositions({})
+      setMdDraftTop(undefined)
+      return
+    }
+
+    const next: Record<string, number> = {}
+    for (const comment of fileComments()) {
+      const marker = mdSurface?.anchor(comment.selection)
+      if (marker) next[comment.id] = mdMarkerTop(el, marker)
+    }
+    setMdCommentPositions(next)
+
+    const range = note.commenting
+    if (!range) {
+      setMdDraftTop(undefined)
+      return
+    }
+    const marker = mdSurface?.anchor(range)
+    if (marker) setMdDraftTop(mdMarkerTop(el, marker))
+    else setMdDraftTop(undefined)
+  }
+
+  const scheduleMdComments = () => requestAnimationFrame(updateMdCommentPositions)
+
   const [note, setNote] = createStore({
     openedComment: null as string | null,
     commenting: null as SelectedLineRange | null,
@@ -338,6 +385,17 @@ export function FileTabContent(props: { tab: string }) {
         onDelete={controls.remove}
       />
     ),
+  })
+
+  // ─── Markdown comment position tracking ───
+  createEffect(() => {
+    fileComments()
+    scheduleMdComments()
+  })
+
+  createEffect(() => {
+    note.commenting
+    scheduleMdComments()
   })
 
   createEffect(() => {
@@ -403,7 +461,14 @@ export function FileTabContent(props: { tab: string }) {
 
     if (resolved.id !== "fallback") {
       return (
-        <div class="relative overflow-hidden pb-40">
+        <div
+          ref={(el) => {
+            mdWrap = el
+            mdSurface = null
+            scheduleMdComments()
+          }}
+          class="relative overflow-hidden pb-40"
+        >
           <Dynamic
             component={resolved.component}
             meta={meta}
@@ -415,8 +480,13 @@ export function FileTabContent(props: { tab: string }) {
             enableLineSelection
             selectedLines={activeSelection()}
             commentedLines={commentedLines()}
+            surfaceRef={(next: CommentSurface | null) => {
+              mdSurface = next
+              scheduleMdComments()
+            }}
             onRendered={() => {
               scrollSync.queueRestore()
+              scheduleMdComments()
             }}
             onLineSelected={(range: SelectedLineRange | null) => {
               commentsUi.onLineSelected(range)
@@ -424,9 +494,62 @@ export function FileTabContent(props: { tab: string }) {
             onLineSelectionEnd={(range: SelectedLineRange | null) => {
               commentsUi.onLineSelectionEnd(range)
             }}
-            surfaceRef={undefined}
             class="select-text"
           />
+          <For each={fileComments()}>
+            {(comment) => (
+              <LineComment
+                id={comment.id}
+                top={mdCommentPositions[comment.id]}
+                open={note.openedComment === comment.id}
+                comment={comment.comment}
+                selection={formatCommentLabel(comment.selection)}
+                onMouseEnter={() => {
+                  const p = path()
+                  if (!p) return
+                  file.setSelectedLines(p, comment.selection)
+                }}
+                onClick={() => {
+                  const p = path()
+                  if (!p) return
+                  setNote("commenting", null)
+                  setNote("openedComment", (current) => (current === comment.id ? null : comment.id))
+                  file.setSelectedLines(p, comment.selection)
+                }}
+              />
+            )}
+          </For>
+          <Show when={note.commenting}>
+            {(range) => (
+              <Show when={mdDraftTop() !== undefined}>
+                <LineCommentEditor
+                  top={mdDraftTop()}
+                  value=""
+                  selection={formatCommentLabel(range())}
+                  autofocus={false}
+                  onInput={() => {}}
+                  onCancel={() => setNote("commenting", null)}
+                  onSubmit={(value) => {
+                    const p = path()
+                    if (!p) return
+                    addCommentToContext({ file: p, selection: range(), comment: value, origin: "file" })
+                    setNote("commenting", null)
+                    requestAnimationFrame(() => setNote("openedComment", null))
+                  }}
+                  onPopoverFocusOut={(e: FocusEvent) => {
+                    const current = e.currentTarget as HTMLDivElement
+                    const target = e.relatedTarget
+                    if (target instanceof Node && current.contains(target)) return
+                    setTimeout(() => {
+                      if (!document.activeElement || !current.contains(document.activeElement)) {
+                        setNote("commenting", null)
+                      }
+                    }, 0)
+                  }}
+                />
+              </Show>
+            )}
+          </Show>
         </div>
       )
     }
