@@ -4,6 +4,7 @@ import { Dynamic } from "solid-js/web"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import type { FileSearchHandle } from "@opencode-ai/ui/file"
 import { useFileComponent } from "@opencode-ai/ui/context/file"
+import { useFileRenderer } from "@opencode-ai/ui/context/file-renderer"
 import { cloneSelectedLineRange, previewSelectedLines } from "@opencode-ai/ui/pierre/selection-bridge"
 import { createLineCommentController } from "@opencode-ai/ui/line-comment-annotations"
 import { sampledChecksum } from "@opencode-ai/core/util/encode"
@@ -177,6 +178,7 @@ export function FileTabContent(props: { tab: string }) {
   const language = useLanguage()
   const prompt = usePrompt()
   const fileComponent = useFileComponent()
+  const fileRenderer = useFileRenderer()
   const { sessionKey, tabs, view } = useSessionLayout()
   const activeFileTab = createSessionTabs({
     tabs,
@@ -394,51 +396,87 @@ export function FileTabContent(props: { tab: string }) {
     scrollSync.queueRestore()
   })
 
-  const renderFile = (source: string) => (
-    <div class="relative overflow-hidden pb-40">
-      <Dynamic
-        component={fileComponent}
-        mode="text"
-        file={{
-          name: path() ?? "",
-          contents: source,
-          cacheKey: cacheKey(),
-        }}
-        enableLineSelection
-        enableHoverUtility
-        selectedLines={activeSelection()}
-        commentedLines={commentedLines()}
-        onRendered={() => {
-          scrollSync.queueRestore()
-        }}
-        annotations={commentsUi.annotations()}
-        renderAnnotation={commentsUi.renderAnnotation}
-        renderHoverUtility={commentsUi.renderHoverUtility}
-        onLineSelected={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelected(range)
-        }}
-        onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
-        onLineSelectionEnd={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelectionEnd(range)
-        }}
-        search={search}
-        class="select-text"
-        media={{
-          mode: "auto",
-          path: path(),
-          current: state()?.content,
-          onLoad: scrollSync.queueRestore,
-          onError: (args: { kind: "image" | "audio" | "svg" }) => {
-            if (args.kind !== "svg") return
-            showToast({
-              variant: "error",
-              title: language.t("toast.file.loadFailed.title"),
-            })
-          },
-        }}
-      />
-    </div>
-  )
+  const renderFile = (source: string) => {
+    const filePath = path() ?? ""
+    const meta = { path: filePath }
+    const resolved = fileRenderer.resolve(meta)
+
+    if (resolved.id !== "fallback") {
+      return (
+        <div class="relative overflow-hidden pb-40">
+          <Dynamic
+            component={resolved.component}
+            meta={meta}
+            file={{
+              name: filePath,
+              contents: source,
+              cacheKey: cacheKey(),
+            }}
+            enableLineSelection
+            selectedLines={activeSelection()}
+            commentedLines={commentedLines()}
+            onRendered={() => {
+              scrollSync.queueRestore()
+            }}
+            onLineSelected={(range: SelectedLineRange | null) => {
+              commentsUi.onLineSelected(range)
+            }}
+            onLineSelectionEnd={(range: SelectedLineRange | null) => {
+              commentsUi.onLineSelectionEnd(range)
+            }}
+            surfaceRef={undefined}
+            class="select-text"
+          />
+        </div>
+      )
+    }
+
+    return (
+      <div class="relative overflow-hidden pb-40">
+        <Dynamic
+          component={fileComponent}
+          mode="text"
+          file={{
+            name: filePath,
+            contents: source,
+            cacheKey: cacheKey(),
+          }}
+          enableLineSelection
+          enableHoverUtility
+          selectedLines={activeSelection()}
+          commentedLines={commentedLines()}
+          onRendered={() => {
+            scrollSync.queueRestore()
+          }}
+          annotations={commentsUi.annotations()}
+          renderAnnotation={commentsUi.renderAnnotation}
+          renderHoverUtility={commentsUi.renderHoverUtility}
+          onLineSelected={(range: SelectedLineRange | null) => {
+            commentsUi.onLineSelected(range)
+          }}
+          onLineNumberSelectionEnd={commentsUi.onLineNumberSelectionEnd}
+          onLineSelectionEnd={(range: SelectedLineRange | null) => {
+            commentsUi.onLineSelectionEnd(range)
+          }}
+          search={search}
+          class="select-text"
+          media={{
+            mode: "auto",
+            path: filePath,
+            current: state()?.content,
+            onLoad: scrollSync.queueRestore,
+            onError: (args: { kind: "image" | "audio" | "svg" }) => {
+              if (args.kind !== "svg") return
+              showToast({
+                variant: "error",
+                title: language.t("toast.file.loadFailed.title"),
+              })
+            },
+          }}
+        />
+      </div>
+    )
+  }
 
   return (
     <Tabs.Content value={props.tab} class="mt-3 relative h-full">
